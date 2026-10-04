@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import ThemeToggle from "./ThemeToggle";
 import {
   LayoutDashboard, Users, Banknote, FileText,
-  Building2, UserCog, LogOut, Menu, Globe, ExternalLink,
+  Building2, UserCog, LogOut, Menu, Globe, ExternalLink, Loader2,
 } from "lucide-react";
 
 interface AdminUser {
@@ -34,6 +34,11 @@ export default function AdminLayoutClient({ children, adminUser, config }: Props
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -70,20 +75,29 @@ export default function AdminLayoutClient({ children, adminUser, config }: Props
         {visibleNav.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href, item.exact);
+          const isPending = pendingHref === item.href && !active;
           return (
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => {
+                if (!active) setPendingHref(item.href);
+                setSidebarOpen(false);
+              }}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors relative",
                 active
                   ? "bg-primary-container text-on-primary-container font-semibold"
+                  : isPending
+                  ? "bg-surface-container text-on-surface font-medium"
                   : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {item.label}
+              <span className="flex-1 truncate">{item.label}</span>
+              {isPending && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+              )}
             </Link>
           );
         })}

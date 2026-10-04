@@ -5,6 +5,8 @@ import { formatRupiah, hitungProgress, formatPersen, NAMA_BULAN, cn } from "@/li
 import ThemeToggle from "@/components/ThemeToggle";
 import PublicHutangTimeline from "@/components/PublicHutangTimeline";
 import PublicAuthButton from "@/components/PublicAuthButton";
+import CopyRekeningButton from "@/components/CopyRekeningButton";
+import DownloadQrisButton from "@/components/DownloadQrisButton";
 import {
   CreditCard, CheckCircle2,
   Building2, Users, ArrowUpRight
@@ -277,16 +279,31 @@ export default async function PublicHomePage({
             {/* Kartu 1: Rekening Bank Kas */}
             <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6 flex flex-col justify-between">
               <div>
-                <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full inline-block">
-                  Transfer Bank Kas
-                </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full inline-block">
+                    Transfer Bank Kas
+                  </span>
+                  <CopyRekeningButton
+                    nomorRekening={configMap.rekening_bank ?? "2156-0100-0796-535"}
+                    variant="badge"
+                  />
+                </div>
+
                 <p className="text-xs text-neutral-500 mt-4 font-medium">Nomor Rekening Kas Panitia:</p>
-                <p className="font-mono text-2xl md:text-3xl font-semibold text-heading tracking-wider tabular-nums mt-1">
+                <p className="font-mono text-2xl md:text-3xl font-semibold text-heading tracking-wider tabular-nums mt-1 select-all">
                   {configMap.rekening_bank ?? "2156-0100-0796-535"}
                 </p>
                 <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300 mt-2">
                   a.n. {configMap.nama_rekening ?? "Kas Pembangunan Masjid Darul Hidayah"}
                 </p>
+
+                <div className="mt-4">
+                  <CopyRekeningButton
+                    nomorRekening={configMap.rekening_bank ?? "2156-0100-0796-535"}
+                    variant="button"
+                    className="w-full sm:w-auto"
+                  />
+                </div>
               </div>
 
               {/* Panduan langsung list minimalis tanpa dibungkus kotak kedua */}
@@ -307,18 +324,27 @@ export default async function PublicHomePage({
             </div>
 
             {/* Kartu 2: QRIS Resmi */}
-            <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6 flex flex-col items-center justify-center text-center">
-              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full mb-3.5 inline-block">
-                Scan QRIS Resmi
-              </span>
-              <div className="w-56 h-72 max-w-full rounded-lg overflow-hidden bg-white p-2 border border-outline/50 flex items-center justify-center shadow-xs">
-                <img
-                  src="/qris.jpg"
-                  alt="QRIS Masjid Darul Hidayah"
-                  className="w-full h-full object-contain"
-                />
+            <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6 flex flex-col items-center justify-between text-center">
+              <div className="flex flex-col items-center w-full">
+                <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full mb-3.5 inline-block">
+                  Scan QRIS Resmi
+                </span>
+                <div className="w-56 h-72 max-w-full rounded-lg overflow-hidden bg-white p-2 border border-outline/50 flex items-center justify-center shadow-xs">
+                  <img
+                    src="/qris.jpg"
+                    alt="QRIS Masjid Darul Hidayah"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="mt-4 w-full flex justify-center">
+                  <DownloadQrisButton
+                    imageUrl="/qris.jpg"
+                    fileName="QRIS-Masjid-Darul-Hidayah.jpg"
+                    className="w-full sm:w-auto"
+                  />
+                </div>
               </div>
-              <p className="text-[11px] text-neutral-500 mt-3 max-w-xs">
+              <p className="text-[11px] text-neutral-500 mt-4 max-w-xs">
                 Mendukung BCA, Mandiri, BRI, BNI, BSI, GoPay, OVO, Dana, ShopeePay & LinkAja
               </p>
             </div>
