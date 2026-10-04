@@ -18,10 +18,12 @@ type PembayaranHutang = Database["public"]["Tables"]["pembayaran_hutang"]["Row"]
 export default function AdminHutangClient({
   initialList,
   initialPembayaran = [],
+  totalDonasiTerkumpul = 0,
   adminNama,
 }: {
   initialList: SumberHutang[];
   initialPembayaran?: PembayaranHutang[];
+  totalDonasiTerkumpul?: number;
   adminNama: string;
 }) {
   const [list, setList] = useState<SumberHutang[]>(initialList);
@@ -72,6 +74,9 @@ export default function AdminHutangClient({
   const totalHutang = list.reduce((s, h) => s + h.nominal, 0);
   const totalTerbayar = list.reduce((s, h) => s + (h.terbayar || 0), 0);
   const totalSisa = Math.max(0, totalHutang - totalTerbayar);
+
+  // Saldo Kas Real Saat Ini = Total Donasi Terkumpul (All-Time) - Total Hutang Pernah Dibayarkan (All-Time)
+  const saldoKasSaatIni = Math.max(0, totalDonasiTerkumpul - totalTerbayar);
 
   // ==========================================
   // SUMBER HUTANG HANDLERS
@@ -191,10 +196,14 @@ export default function AdminHutangClient({
     }
     const sisa = Math.max(0, item.nominal - item.terbayar);
     setSelectedHutangForBayar(item);
+
+    // Nilai default: jumlah saldo kas saat ini (real), tetapi tidak melebihi sisa hutang toko
+    const defaultNominal = Math.min(saldoKasSaatIni, sisa);
+
     setBayarForm({
       sumber_hutang_id: item.id,
       tanggal_bayar: new Date().toISOString().split("T")[0],
-      nominal: sisa > 0 ? (sisa <= 50000000 ? sisa : 10000000) : 10000000,
+      nominal: defaultNominal,
       metode: "Transfer",
       no_referensi: "",
       keterangan: "",
@@ -236,9 +245,25 @@ export default function AdminHutangClient({
       return;
     }
 
+    // Validasi: Setoran pembayaran hutang tidak boleh melebihi saldo kas riil saat ini
+    if (bayarForm.nominal > saldoKasSaatIni) {
+      setError(
+        `Nominal pembayaran (${formatRupiah(bayarForm.nominal)}) tidak boleh melebihi saldo kas riil yang tersedia (${formatRupiah(saldoKasSaatIni)}). Saldo kas real saat ini adalah total donasi terkumpul dikurangi total pembayaran hutang yang sudah pernah disetorkan.`
+      );
+      return;
+    }
+
     const targetHutang = list.find((h) => h.id === bayarForm.sumber_hutang_id);
     if (!targetHutang) {
       setError("Sumber hutang tidak ditemukan.");
+      return;
+    }
+
+    const sisaHutang = Math.max(0, targetHutang.nominal - targetHutang.terbayar);
+    if (bayarForm.nominal > sisaHutang) {
+      setError(
+        `Nominal pembayaran (${formatRupiah(bayarForm.nominal)}) melebihi sisa hutang ke kreditor ini (${formatRupiah(sisaHutang)}).`
+      );
       return;
     }
 
@@ -688,6 +713,37 @@ export default function AdminHutangClient({
               </button>
             </div>
 
+            {/* Panel Ringkasan Akumulasi & Saldo Kas Real */}
+            <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-low p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-on-surface-variant flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Akumulasi Donasi Terkumpul (All-Time):
+                </span>
+                <span className="font-mono font-bold text-on-surface tabular-nums">
+                  {formatRupiah(totalDonasiTerkumpul)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-on-surface-variant flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                  Total Setoran Hutang Sebelumnya:
+                </span>
+                <span className="font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+                  {formatRupiah(totalTerbayar)}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-outline-variant flex items-center justify-between">
+                <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Saldo Kas Riil Saat Ini (Batas Maks. Bayar):
+                </span>
+                <span className="font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  {formatRupiah(saldoKasSaatIni)}
+                </span>
+              </div>
+            </div>
+
             {error && (
               <div className="mb-4 flex items-center gap-2 rounded-xl bg-error-container px-3.5 py-2.5 text-xs text-on-error-container">
                 <AlertCircle className="h-4 w-4 shrink-0" />
@@ -707,7 +763,12 @@ export default function AdminHutangClient({
                     const id = parseInt(e.target.value);
                     const selected = list.find((h) => h.id === id);
                     setSelectedHutangForBayar(selected || null);
-                    setBayarForm((f) => ({ ...f, sumber_hutang_id: id }));
+                    const sisa = selected ? Math.max(0, selected.nominal - selected.terbayar) : 0;
+                    setBayarForm((f) => ({
+                      ...f,
+                      sumber_hutang_id: id,
+                      nominal: Math.min(saldoKasSaatIni, sisa),
+                    }));
                   }}
                   className={inputCls}
                 >
@@ -767,9 +828,14 @@ export default function AdminHutangClient({
 
               {/* Nominal Pembayaran */}
               <div>
-                <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider mb-1.5">
-                  Nominal Pembayaran (Rp) *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider">
+                    Nominal Pembayaran (Rp) *
+                  </label>
+                  <span className="text-[11px] font-medium text-on-surface-variant">
+                    Maks. Saldo: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatRupiah(saldoKasSaatIni)}</strong>
+                  </span>
+                </div>
                 <div className="relative">
                   <span className="absolute left-3.5 top-2.5 font-mono text-sm font-semibold text-on-surface-variant">
                     Rp
@@ -777,14 +843,27 @@ export default function AdminHutangClient({
                   <input
                     type="number"
                     min={1}
+                    max={saldoKasSaatIni}
                     value={bayarForm.nominal || ""}
                     onChange={(e) =>
                       setBayarForm((f) => ({ ...f, nominal: parseInt(e.target.value) || 0 }))
                     }
                     placeholder="0"
-                    className={cn(inputCls, "pl-11 font-mono font-bold text-base tabular-nums")}
+                    className={cn(
+                      inputCls,
+                      "pl-11 font-mono font-bold text-base tabular-nums",
+                      bayarForm.nominal > saldoKasSaatIni && "border-rose-500 focus:ring-rose-500 text-rose-600"
+                    )}
                   />
                 </div>
+
+                {/* Validasi jika input melebihi saldo kas saat ini */}
+                {bayarForm.nominal > saldoKasSaatIni && (
+                  <p className="mt-1 text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
+                    <AlertCircle className="h-3 w-3 shrink-0" />
+                    Nominal melebihi saldo kas riil ({formatRupiah(saldoKasSaatIni)}). Setoran hutang tidak boleh melebihi saldo kas tersedia.
+                  </p>
+                )}
 
                 {/* Quick Presets */}
                 {selectedHutangForBayar && (
@@ -793,25 +872,42 @@ export default function AdminHutangClient({
                       const sisa = Math.max(0, selectedHutangForBayar.nominal - selectedHutangForBayar.terbayar);
                       return (
                         <>
-                          {sisa > 0 && (
+                          {saldoKasSaatIni > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setBayarForm((f) => ({
+                                  ...f,
+                                  nominal: Math.min(saldoKasSaatIni, sisa),
+                                }))
+                              }
+                              className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold transition-colors"
+                              title="Set nominal maksimal sesuai saldo kas riil"
+                            >
+                              Gunakan Saldo Kas Real ({formatRupiah(Math.min(saldoKasSaatIni, sisa))})
+                            </button>
+                          )}
+                          {sisa > 0 && saldoKasSaatIni >= sisa && (
                             <button
                               type="button"
                               onClick={() => setBayarForm((f) => ({ ...f, nominal: sisa }))}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold transition-colors"
+                              className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold transition-colors"
                             >
-                              Lunasi Sisa ({formatRupiah(sisa)})
+                              Lunasi Toko ({formatRupiah(sisa)})
                             </button>
                           )}
-                          {[5000000, 10000000, 25000000, 50000000].map((preset) => (
-                            <button
-                              key={preset}
-                              type="button"
-                              onClick={() => setBayarForm((f) => ({ ...f, nominal: preset }))}
-                              className="px-2 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-[11px] font-medium transition-colors"
-                            >
-                              {formatRupiah(preset)}
-                            </button>
-                          ))}
+                          {[5000000, 10000000, 25000000, 50000000]
+                            .filter((preset) => preset <= saldoKasSaatIni && preset <= sisa)
+                            .map((preset) => (
+                              <button
+                                key={preset}
+                                type="button"
+                                onClick={() => setBayarForm((f) => ({ ...f, nominal: preset }))}
+                                className="px-2 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-[11px] font-medium transition-colors"
+                              >
+                                {formatRupiah(preset)}
+                              </button>
+                            ))}
                         </>
                       );
                     })()}
@@ -920,6 +1016,15 @@ export default function AdminHutangClient({
               </div>
             </div>
 
+            {saldoKasSaatIni <= 0 && (
+              <div className="mt-3 flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 text-xs text-amber-700 dark:text-amber-300">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>
+                  Saat ini tidak ada saldo kas riil yang tersedia untuk disetorkan (Saldo: Rp 0). Menunggu donasi baru masuk.
+                </span>
+              </div>
+            )}
+
             <div className="flex gap-3 mt-6 pt-3 border-t border-outline-variant">
               <button
                 type="button"
@@ -932,8 +1037,13 @@ export default function AdminHutangClient({
               <button
                 type="button"
                 onClick={handleSavePembayaran}
-                disabled={uploadProgress}
-                className="flex-1 rounded-xl bg-emerald-600 dark:bg-emerald-700 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors shadow-sm flex items-center justify-center gap-2"
+                disabled={
+                  uploadProgress ||
+                  bayarForm.nominal <= 0 ||
+                  bayarForm.nominal > saldoKasSaatIni ||
+                  saldoKasSaatIni <= 0
+                }
+                className="flex-1 rounded-xl bg-emerald-600 dark:bg-emerald-700 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
                 {uploadProgress ? (
                   <>
