@@ -2,57 +2,73 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ============ VERCEL 2026 GEIST AESTHETIC (DARK / LIGHT) ============ */
+/* ============ VERCEL GEIST DESIGN SYSTEM 2026 (REFINED) ============ */
 
-/* LIGHT THEME: Crisp White, Razor-sharp hairline borders, Deep Typography */
+/* LIGHT THEME: Clean Crisp Canvas, Soft Hairline Borders, Refined Typography */
 :root,
 .light {
-  --c-primary: 13 148 93;
-  --c-on-primary: 255 255 255;
-  --c-primary-container: 236 253 245;
-  --c-on-primary-container: 6 78 59;
-  --c-primary-dark: 5 102 64;
-  --c-primary-light: 16 185 129;
-
-  --c-secondary: 102 102 102;
-  --c-on-secondary: 255 255 255;
-  --c-secondary-container: 245 245 245;
-  --c-on-secondary-container: 17 17 17;
-
-  --c-error: 224 49 49;
-  --c-on-error: 255 255 255;
-  --c-error-container: 254 238 238;
-  --c-on-error-container: 168 20 20;
-
   --c-background: 255 255 255;
-  --c-on-background: 10 10 10;
+  --c-on-background: 23 23 23;
 
   --c-surface: 255 255 255;
-  --c-on-surface: 17 17 17;
-  --c-surface-variant: 247 247 247;
-  --c-on-surface-variant: 102 102 102;
+  --c-on-surface: 23 23 23;
+  --c-surface-variant: 250 250 250;
+  --c-on-surface-variant: 115 115 115;
 
   --c-surface-container-lowest: 255 255 255;
   --c-surface-container-low: 250 250 250;
-  --c-surface-container: 245 245 245;
-  --c-surface-container-high: 235 235 235;
+  --c-surface-container: 245 245 247;
+  --c-surface-container-high: 228 228 231;
 
-  --c-outline: 212 212 212;
-  --c-outline-variant: 229 229 229;
+  --c-outline: 228 228 231;
+  --c-outline-variant: 241 241 243;
+
+  --c-primary: 5 150 105;
+  --c-on-primary: 255 255 255;
+  --c-primary-container: 236 253 245;
+  --c-on-primary-container: 6 95 70;
+  --c-primary-dark: 4 120 87;
+  --c-primary-light: 16 185 129;
+
+  --c-secondary: 115 115 115;
+  --c-on-secondary: 255 255 255;
+  --c-secondary-container: 245 245 245;
+  --c-on-secondary-container: 23 23 23;
+
+  --c-error: 225 29 72;
+  --c-on-error: 255 255 255;
+  --c-error-container: 255 241 242;
+  --c-on-error-container: 159 18 57;
 
   --c-status-success: 16 185 129;
   --c-status-warning: 245 158 11;
-  --c-status-danger: 239 68 68;
+  --c-status-danger: 225 29 72;
 
   color-scheme: light;
 }
 
-/* DARK THEME: Vercel Deep Obsidian, High-contrast hairline borders, Electric Emerald */
+/* DARK THEME: Vercel Signature Pure Black, Subtle Glass, Soft Zinc Hairlines */
 .dark {
+  --c-background: 0 0 0;
+  --c-on-background: 237 237 237;
+
+  --c-surface: 10 10 10;
+  --c-on-surface: 237 237 237;
+  --c-surface-variant: 18 18 18;
+  --c-on-surface-variant: 161 161 161;
+
+  --c-surface-container-lowest: 0 0 0;
+  --c-surface-container-low: 12 12 12;
+  --c-surface-container: 20 20 20;
+  --c-surface-container-high: 34 34 34;
+
+  --c-outline: 39 39 42;
+  --c-outline-variant: 28 28 30;
+
   --c-primary: 16 185 129;
   --c-on-primary: 0 0 0;
   --c-primary-container: 4 47 31;
-  --c-on-primary-container: 167 243 208;
+  --c-on-primary-container: 110 231 183;
   --c-primary-dark: 5 150 105;
   --c-primary-light: 52 211 153;
 
@@ -61,35 +77,22 @@
   --c-secondary-container: 24 24 27;
   --c-on-secondary-container: 244 244 245;
 
-  --c-error: 248 113 113;
-  --c-on-error: 69 10 10;
-  --c-error-container: 69 10 10;
-  --c-on-error-container: 254 202 202;
-
-  --c-background: 0 0 0;
-  --c-on-background: 243 244 246;
-
-  --c-surface: 10 10 10;
-  --c-on-surface: 243 244 246;
-  --c-surface-variant: 20 20 20;
-  --c-on-surface-variant: 161 161 161;
-
-  --c-surface-container-lowest: 0 0 0;
-  --c-surface-container-low: 10 10 10;
-  --c-surface-container: 18 18 18;
-  --c-surface-container-high: 28 28 28;
-
-  --c-outline: 55 55 55;
-  --c-outline-variant: 38 38 38;
+  --c-error: 251 113 133;
+  --c-on-error: 76 5 25;
+  --c-error-container: 76 5 25;
+  --c-on-error-container: 255 228 230;
 
   --c-status-success: 16 185 129;
   --c-status-warning: 251 191 36;
-  --c-status-danger: 248 113 113;
+  --c-status-danger: 251 113 133;
 
   color-scheme: dark;
 }
 
 @theme inline {
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
   --color-primary: rgb(var(--c-primary) / <alpha-value>);
   --color-on-primary: rgb(var(--c-on-primary) / <alpha-value>);
   --color-primary-container: rgb(var(--c-primary-container) / <alpha-value>);
@@ -133,30 +136,51 @@
 }
 
 body {
+  font-family: var(--font-sans);
   background-color: rgb(var(--c-background));
   color: rgb(var(--c-on-background));
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.012em;
   text-rendering: optimizeLegibility;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* VERCEL-STYLE STICKY HEADER (100% OPAQUE & BLURRED, ANTI TUMPANG TINDIH) */
+/* ==============================================================
+   STICKY HEADER: 100% OPAQUE & BLURRED (ZERO TRANSPARENCY LEAK)
+   ============================================================== */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background-color: rgb(var(--c-surface)) !important;
-  border-bottom: 1px solid rgb(var(--c-outline-variant)) !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  width: 100%;
 }
 
-@supports (backdrop-filter: blur(16px)) or (-webkit-backdrop-filter: blur(16px)) {
-  .site-header {
-    background-color: rgba(var(--c-surface), 0.92) !important;
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+:root .site-header,
+.light .site-header {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.dark .site-header {
+  background-color: rgba(0, 0, 0, 0.82) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Fallback if browser doesn't support backdrop blur */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root .site-header,
+  .light .site-header {
+    background-color: #ffffff !important;
+  }
+  .dark .site-header {
+    background-color: #000000 !important;
   }
 }
 
@@ -164,8 +188,8 @@ body {
 .modal-panel {
   background-color: rgb(var(--c-surface-container-lowest)) !important;
   color: rgb(var(--c-on-surface)) !important;
-  border: 1px solid rgb(var(--c-outline-variant)) !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid rgb(var(--c-outline)) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* SIDEBAR PANEL: 100% SOLID BACKGROUND UNTUK DESKTOP & MOBILE */
@@ -175,19 +199,18 @@ body {
   opacity: 1 !important;
 }
 
-
-/* CUSTOM SCROLLBAR DENGAN SEMANTIC TOKEN */
+/* CUSTOM SCROLLBAR VERCEL STYLE */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--c-outline-variant));
+  background: rgb(var(--c-outline));
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--c-outline));
+  background: rgb(var(--c-on-surface-variant));
 }
