@@ -48,7 +48,7 @@ export default async function AdminDashboardPage() {
 
   const totalTerkumpul = semuaPembayaran.reduce((s, p) => s + p.nominal, 0);
   const totalSetor = setorPihakKetiga.reduce((s, p) => s + p.jumlah, 0);
-  const sisaHutang = Math.max(0, totalHutang - totalTerkumpul - totalSetor);
+  const sisaHutang = Math.max(0, totalHutang - (totalSetor > 0 ? totalSetor : totalTerkumpul));
   const totalBulanIni = pembayaranBulanIni.reduce((s, p) => s + p.nominal, 0);
   const sudahBayarIds = new Set(pembayaranBulanIni.map((p) => p.donatur_id));
 

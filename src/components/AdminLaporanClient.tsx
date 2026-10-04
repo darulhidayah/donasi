@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatRupiah, formatBulan, NAMA_BULAN, toBulanDB } from "@/lib/utils";
+import { formatRupiah, formatBulan, NAMA_BULAN, toBulanDB, formatPersen } from "@/lib/utils";
 import { exportRekapToExcel } from "@/lib/excel";
 import { cn } from "@/lib/utils";
 import {
@@ -38,11 +38,11 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
 
   const totalHutang = parseInt(config.total_hutang ?? "800000000");
 
-  // Filter pembayaran bulan ini
+  // 1. Penerimaan Donasi Bulan Ini dari para donatur
   const pembayaranBulan = allPembayaran.filter((p) => p.bulan === bulanDB);
   const totalDonasiBulan = pembayaranBulan.reduce((s, p) => s + p.nominal, 0);
 
-  // Breakdown nilai donasi berdasarkan saluran pembayaran (Bulan Ini)
+  // Breakdown saluran donasi bulan ini
   const donasiQRISBulan = pembayaranBulan
     .filter((p) => /qris/i.test(p.metode))
     .reduce((s, p) => s + p.nominal, 0);
@@ -66,17 +66,19 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
   const totalKeseluruhanDonasiBulan =
     donasiQRISBulan + donasiRekeningBulan + donasiTunaiBulan + donasiLainnyaBulan;
 
-  // Setor pihak ketiga bulan ini
+  // 2. Setor Pihak Ketiga (Pengeluaran kas donasi untuk membayar toko/supplier)
   const setorBulan = setorData.find((s) => s.bulan === bulanDB);
   const totalSetorBulan = setorBulan?.jumlah ?? 0;
-  const totalMasukBulan = totalDonasiBulan + totalSetorBulan;
 
-  // REKAP: hitung saldo hutang kumulatif per bulan (sesuai template excel koordinator)
+  // 3. Sisa Saldo Kas Donasi Bulan Ini (Donasi Masuk - Disetor ke Toko)
+  const sisaSaldoKasBulan = totalDonasiBulan - totalSetorBulan;
+
+  // 4. REKAP BULANAN (Sesuai Template Excel Koordinator)
   const bulanUnik = [
     ...new Set([...allPembayaran.map((p) => p.bulan), ...setorData.map((s) => s.bulan)]),
   ].sort();
 
-  let sisaHutang = totalHutang;
+  let saldoHutangBerjalan = totalHutang;
   const rekapBulan = bulanUnik.map((bln, idx) => {
     const listBln = allPembayaran.filter((p) => p.bulan === bln);
     const masuk = listBln.reduce((s, p) => s + p.nominal, 0);
@@ -84,8 +86,10 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
     const rekening = listBln.filter((p) => /transfer|rek|bank/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
     const tunai = listBln.filter((p) => /tunai|cash/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
     const setor = setorData.find((s) => s.bulan === bln)?.jumlah ?? 0;
-    const totalMasuk = masuk + setor;
-    sisaHutang -= totalMasuk;
+    
+    const sisaKasBulan = masuk - setor;
+    saldoHutangBerjalan = Math.max(0, saldoHutangBerjalan - setor);
+
     return {
       bulan: bln,
       no: idx + 1,
@@ -94,25 +98,27 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
       donasiTunai: tunai,
       jumlahDonasi: masuk,
       setorPihakKetiga: setor,
-      totalMasuk,
-      sisaHutang: Math.max(0, sisaHutang),
+      sisaKasBulan,
+      sisaHutang: saldoHutangBerjalan,
       keterangan: setorData.find((s) => s.bulan === bln)?.keterangan ?? undefined,
     };
   });
 
-  // Progress overall & akumulasi per saluran
-  const totalTerkumpulAll = allPembayaran.reduce((s, p) => s + p.nominal, 0);
+  // 5. Akumulasi Seluruh Waktu (All-Time)
+  const totalDonasiAll = allPembayaran.reduce((s, p) => s + p.nominal, 0);
   const totalQRISAll = allPembayaran.filter((p) => /qris/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
   const totalRekeningAll = allPembayaran.filter((p) => /transfer|rek|bank/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
   const totalTunaiAll = allPembayaran.filter((p) => /tunai|cash/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
 
   const totalSetorAll = setorData.reduce((s, p) => s + p.jumlah, 0);
-  const progressAll = Math.min(
-    100,
-    Math.round(((totalTerkumpulAll + totalSetorAll) / totalHutang) * 100)
-  );
+  const sisaSaldoKasAll = totalDonasiAll - totalSetorAll;
 
-  // Text untuk share WA
+  // Realisasi pelunasan hutang: Uang yang telah disetorkan ke pihak ketiga (atau donasi yang sudah siap disetor)
+  const totalPelunasanTerealisasi = totalSetorAll > 0 ? totalSetorAll : totalDonasiAll;
+  const sisaKewajibanHutang = Math.max(0, totalHutang - totalPelunasanTerealisasi);
+  const progressPersenStr = formatPersen(totalPelunasanTerealisasi, totalHutang);
+
+  // 6. Text format siap share ke WhatsApp (Bebas dari double counting 100K)
   const generateWAText = () => {
     const lines = [
       `📋 *LAPORAN DONASI PELUNASAN HUTANG*`,
@@ -130,17 +136,19 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
       `• Via Rekening Masjid: *${formatRupiah(donasiRekeningBulan)}*`,
       `• Via Tunai: *${formatRupiah(donasiTunaiBulan)}*`,
       donasiLainnyaBulan > 0 ? `• Via Lainnya: *${formatRupiah(donasiLainnyaBulan)}*` : null,
-      `= *Jumlah Keseluruhan: ${formatRupiah(totalKeseluruhanDonasiBulan)}*`,
+      `= *Jumlah Keseluruhan Donasi: ${formatRupiah(totalKeseluruhanDonasiBulan)}*`,
       ``,
-      `📊 *Rekapitulasi Keuangan:*`,
+      `📊 *Rekapitulasi Keuangan (${labelBulan}):*`,
       `• Total Donasi Terkumpul Bulan Ini: *${formatRupiah(totalDonasiBulan)}*`,
-      totalSetorBulan > 0 ? `• Setor Pihak Ketiga: ${formatRupiah(totalSetorBulan)}` : null,
-      `• Total Masuk Bulan Ini: *${formatRupiah(totalMasukBulan)}*`,
-      `• Total Akumulasi Penerimaan: ${formatRupiah(totalTerkumpulAll + totalSetorAll)}`,
-      `• Sisa Kewajiban Hutang: *${formatRupiah(
-        Math.max(0, totalHutang - totalTerkumpulAll - totalSetorAll)
-      )}*`,
-      `• Progres Pelunasan: *${progressAll}% Lunas*`,
+      `• Disetorkan ke Pihak Ketiga (Toko): *${formatRupiah(totalSetorBulan)}*`,
+      `• Sisa Saldo Kas Donasi Bulan Ini: *${formatRupiah(sisaSaldoKasBulan)}*`,
+      ``,
+      `🏛️ *Akumulasi Pelunasan Hutang Pembangunan:*`,
+      `• Total Akumulasi Donasi Diterima: *${formatRupiah(totalDonasiAll)}*`,
+      `• Total Disetorkan ke Toko: *${formatRupiah(totalSetorAll)}*`,
+      `• Sisa Saldo Kas Panitia (Standby): *${formatRupiah(sisaSaldoKasAll)}*`,
+      `• Sisa Kewajiban Hutang: *${formatRupiah(sisaKewajibanHutang)}*`,
+      `• Progres Pelunasan: *${progressPersenStr} Terpenuhi*`,
       ``,
       `_Laporan ini disampaikan sebagai bentuk transparansi dan amanah kepengurusan donasi._`,
       `_Jazakumullahu Khairan Katsiran atas partisipasi seluruh donatur tetap._ 🤲`,
@@ -261,7 +269,12 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
             </button>
           }
         />
-        <SummaryCard label="Total Masuk" value={formatRupiah(totalMasukBulan)} highlight />
+        <SummaryCard
+          label="Sisa Saldo Kas"
+          value={formatRupiah(sisaSaldoKasBulan)}
+          highlight
+          sub={sisaSaldoKasBulan === 0 ? "Tersalurkan penuh" : "Tersimpan di kas"}
+        />
       </div>
 
       {/* Rincian Nilai Donasi Berdasarkan Saluran Pembayaran (QRIS, Rekening, Tunai) */}
@@ -407,7 +420,7 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
             </h2>
           </div>
           <span className="text-xs font-bold text-primary bg-primary-container px-2.5 py-1 rounded-full">
-            {progressAll}% Lunas
+            {progressPersenStr} Terpenuhi
           </span>
         </div>
         <div className="overflow-x-auto">
@@ -421,8 +434,8 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
                 <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Via Tunai</th>
                 <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Jumlah Donasi</th>
                 <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Setor Pihak Ketiga</th>
-                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Total Masuk</th>
-                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Sisa Hutang</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Sisa Saldo Kas</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Sisa Saldo Hutang</th>
                 <th className="text-left px-3 py-3 font-bold text-on-surface-variant">Keterangan</th>
               </tr>
             </thead>
@@ -459,8 +472,8 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
                     <td className="px-3 py-3 text-right font-mono text-xs text-on-surface">
                       {r.setorPihakKetiga > 0 ? formatRupiah(r.setorPihakKetiga) : "-"}
                     </td>
-                    <td className="px-3 py-3 text-right font-mono font-bold text-primary">
-                      {formatRupiah(r.totalMasuk)}
+                    <td className="px-3 py-3 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                      {formatRupiah(r.sisaKasBulan)}
                     </td>
                     <td className="px-3 py-3 text-right font-mono font-bold text-status-danger">
                       {formatRupiah(r.sisaHutang)}
@@ -487,16 +500,16 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
                   {formatRupiah(totalTunaiAll)}
                 </td>
                 <td className="px-3 py-3.5 text-right font-bold text-on-surface">
-                  {formatRupiah(totalTerkumpulAll)}
+                  {formatRupiah(totalDonasiAll)}
                 </td>
                 <td className="px-3 py-3.5 text-right font-bold text-on-surface">
                   {formatRupiah(totalSetorAll)}
                 </td>
-                <td className="px-3 py-3.5 text-right font-bold text-primary">
-                  {formatRupiah(totalTerkumpulAll + totalSetorAll)}
+                <td className="px-3 py-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatRupiah(sisaSaldoKasAll)}
                 </td>
                 <td className="px-3 py-3.5 text-right font-bold text-status-danger">
-                  {formatRupiah(Math.max(0, totalHutang - totalTerkumpulAll - totalSetorAll))}
+                  {formatRupiah(sisaKewajibanHutang)}
                 </td>
                 <td />
               </tr>

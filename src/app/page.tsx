@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase";
-import { formatRupiah, hitungProgress, NAMA_BULAN, cn } from "@/lib/utils";
+import { formatRupiah, hitungProgress, formatPersen, NAMA_BULAN, cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
 import PublicHutangTimeline from "@/components/PublicHutangTimeline";
 import {
@@ -52,17 +52,14 @@ export default async function PublicHomePage() {
       ? totalHutangDariSumber
       : parseInt(configMap.total_hutang ?? "800000000");
 
-  const totalDonasi = ((semuaPembayaranRaw ?? []) as Pick<Pembayaran, "nominal">[]).reduce(
+  // Total donasi murni yang dihimpun dari para donatur
+  const totalTerkumpul = ((semuaPembayaranRaw ?? []) as Pick<Pembayaran, "nominal">[]).reduce(
     (s, p) => s + p.nominal,
     0
   );
-  const totalSetor = ((setorPihakKetigaRaw ?? []) as Pick<Setor, "jumlah">[]).reduce(
-    (s, p) => s + p.jumlah,
-    0
-  );
-  const totalTerkumpul = totalDonasi + totalSetor;
   const sisaHutang = Math.max(0, totalHutang - totalTerkumpul);
   const progress = hitungProgress(totalTerkumpul, totalHutang);
+  const progressStr = formatPersen(totalTerkumpul, totalHutang);
   const totalDonatur = (donaturRaw ?? []).length;
 
   const now = new Date();
@@ -163,7 +160,7 @@ export default async function PublicHomePage() {
 
             <div className="flex justify-between items-center mt-2.5 text-xs">
               <span className="font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-[11px]">
-                {progress}% Terpenuhi
+                {progressStr} Terpenuhi
               </span>
               <span className="text-status-danger font-mono font-medium tabular-nums text-xs">
                 Sisa Kewajiban: {formatRupiah(sisaHutang)}

@@ -58,7 +58,7 @@ export function exportRekapToExcel(
     donasiTunai?: number;
     jumlahDonasi: number;
     setorPihakKetiga: number;
-    totalMasuk: number;
+    sisaKasBulan: number;
     sisaHutang: number;
     keterangan?: string;
   }>,
@@ -71,10 +71,9 @@ export function exportRekapToExcel(
     "Via QRIS (Rp)": r.donasiQRIS ?? 0,
     "Via Rekening Masjid (Rp)": r.donasiRekening ?? 0,
     "Via Tunai (Rp)": r.donasiTunai ?? 0,
-    "Jumlah Keseluruhan Donasi (Rp)": r.jumlahDonasi,
-    "Saldo Hutang Awal (Rp)": totalHutang,
+    "Jumlah Donasi Terkumpul (Rp)": r.jumlahDonasi,
     "Jumlah Setor Pihak Ketiga (Rp)": r.setorPihakKetiga,
-    "Total Masuk (Rp)": r.totalMasuk,
+    "Sisa Saldo Kas Bulan Ini (Rp)": r.sisaKasBulan,
     "Sisa Saldo Hutang (Rp)": r.sisaHutang,
     Keterangan: r.keterangan ?? "",
   }));

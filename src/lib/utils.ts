@@ -21,10 +21,25 @@ export function toBulanDB(tahun: number, bulan: number): string {
   return `${tahun}-${String(bulan).padStart(2, "0")}-01`;
 }
 
-/** Hitung persentase progress */
+/** Hitung persentase progress (mendukung desimal jika < 1%) */
 export function hitungProgress(terkumpul: number, total: number): number {
   if (total <= 0) return 0;
-  return Math.min(Math.round((terkumpul / total) * 100), 100);
+  const persen = (terkumpul / total) * 100;
+  if (persen > 0 && persen < 1) {
+    return parseFloat(persen.toFixed(2));
+  }
+  return Math.min(Math.round(persen), 100);
+}
+
+/** Format teks persentase: 0.0125 → "0,01%" */
+export function formatPersen(terkumpul: number, total: number): string {
+  if (total <= 0) return "0%";
+  const persen = (terkumpul / total) * 100;
+  if (persen === 0) return "0%";
+  if (persen > 0 && persen < 1) {
+    return persen.toFixed(2).replace(".", ",") + "%";
+  }
+  return Math.min(100, Math.round(persen)) + "%";
 }
 
 /** Format tanggal: "2024-10-15" → "15 Oktober 2024" */
