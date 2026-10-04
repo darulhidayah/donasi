@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase";
 import { formatRupiah, hitungProgress, formatPersen, NAMA_BULAN, cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
 import PublicHutangTimeline from "@/components/PublicHutangTimeline";
+import PublicAuthButton from "@/components/PublicAuthButton";
 import {
-  CreditCard, LogIn, CheckCircle2,
+  CreditCard, CheckCircle2,
   Building2, Users, ArrowUpRight
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
@@ -18,7 +20,16 @@ type PembayaranHutang = Database["public"]["Tables"]["pembayaran_hutang"]["Row"]
 
 export const revalidate = 60; // refresh data setiap 60 detik
 
-export default async function PublicHomePage() {
+export default async function PublicHomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ code?: string }>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
+  if (params?.code) {
+    redirect(`/auth/callback?code=${params.code}`);
+  }
+
   const supabase = await createServerSupabase();
 
   const [
@@ -43,14 +54,39 @@ export default async function PublicHomePage() {
     configMap[c.kunci] = c.nilai;
   });
 
-  const sumberHutang = (sumberHutangRaw ?? []) as SumberHutang[];
   const riwayatHutang = (riwayatHutangRaw ?? []) as PembayaranHutang[];
+
+  // Sinkronkan nilai terbayar pada setiap sumber hutang secara dinamis dengan riwayat transaksi pembayaran
+  const sumberHutang = ((sumberHutangRaw ?? []) as SumberHutang[]).map((h) => {
+    const totalBayarToko = riwayatHutang
+      .filter((p) => p.sumber_hutang_id === h.id)
+      .reduce((sum, p) => sum + (p.nominal || 0), 0);
+    const terbayarFinal = Math.max(h.terbayar || 0, totalBayarToko);
+    let status = h.status;
+    if (terbayarFinal >= h.nominal && h.nominal > 0) status = "lunas";
+    else if (terbayarFinal > 0) status = "sebagian";
+    return { ...h, terbayar: terbayarFinal, status };
+  });
 
   const totalHutangDariSumber = sumberHutang.reduce((s, h) => s + h.nominal, 0);
   const totalHutang =
     totalHutangDariSumber > 0
       ? totalHutangDariSumber
       : parseInt(configMap.total_hutang ?? "800000000");
+
+  // Periksa apakah admin sedang dalam status login
+  const { data: { user } } = await supabase.auth.getUser();
+  let isAdminLoggedIn = false;
+  if (user?.email) {
+    const { data: adminRaw } = await supabase
+      .from("admin_users")
+      .select("id, aktif")
+      .eq("email", user.email)
+      .single();
+    if (adminRaw?.aktif) {
+      isAdminLoggedIn = true;
+    }
+  }
 
   // Total donasi murni yang dihimpun dari para donatur
   const totalTerkumpul = ((semuaPembayaranRaw ?? []) as Pick<Pembayaran, "nominal">[]).reduce(
@@ -93,13 +129,7 @@ export default async function PublicHomePage() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-outline/70 hover:border-emerald-500 bg-surface px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-200 transition-all shadow-xs"
-            >
-              <LogIn className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Portal Admin</span>
-            </Link>
+            <PublicAuthButton initialLoggedIn={isAdminLoggedIn} />
           </div>
         </div>
       </header>
@@ -107,9 +137,9 @@ export default async function PublicHomePage() {
       {/* Main Container */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8 space-y-10">
         {/* 1. Hero Banner: Single unified card without nested box */}
-        <section className="rounded-2xl bg-surface border border-outline/70 p-6 md:p-8 text-on-surface shadow-[0_1px_3px_rgba(0,0,0,0.02)] relative overflow-hidden">
+        <section className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6 md:p-8 text-on-surface relative overflow-hidden">
           {/* Subtle Top Hairline Highlight */}
-          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
 
           {/* Pulse Live Badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-4">
@@ -130,7 +160,7 @@ export default async function PublicHomePage() {
           </p>
 
           {/* Progress Section (Langsung menyatu dalam card tanpa box ganda) */}
-          <div className="mt-8 pt-6 border-t border-outline/60">
+          <div className="mt-8 pt-6 border-t border-outline-variant/60">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-2 mb-2">
               <div>
                 <p className="text-[11px] text-neutral-500 font-medium uppercase tracking-wider">
@@ -150,11 +180,11 @@ export default async function PublicHomePage() {
               </div>
             </div>
 
-            {/* Glowing Vercel Progress Bar */}
-            <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden mt-3.5 relative">
+            {/* Thin Gradient Progress Bar */}
+            <div className="w-full bg-surface-container-high rounded-full h-1.5 overflow-hidden mt-3.5 relative">
               <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-1000 shadow-xs"
-                style={{ width: `${progress}%` }}
+                className="h-full rounded-full transition-all duration-1000"
+                style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #059669, #10b981)' }}
               />
             </div>
 
@@ -170,22 +200,22 @@ export default async function PublicHomePage() {
         </section>
 
         {/* 2. Quick Stats Grid (3 Kartu Flat Bersih) */}
-        <section className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-          <div className="rounded-xl border border-outline/70 bg-surface p-4 text-center transition-all hover:border-emerald-600/30">
+        <section className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-4 text-center transition-all hover:shadow-md">
             <p className="text-xs text-neutral-500 font-medium">Donatur Tetap Terdaftar</p>
             <p className="font-mono text-2xl md:text-3xl font-semibold text-heading mt-1.5 tabular-nums tracking-tight">
               {totalDonatur}
             </p>
             <p className="text-[11px] text-neutral-400 mt-0.5">Orang di Grup WA</p>
           </div>
-          <div className="rounded-xl border border-outline/70 bg-surface p-4 text-center transition-all hover:border-emerald-600/30">
+          <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-4 text-center transition-all hover:shadow-md">
             <p className="text-xs text-neutral-500 font-medium">Minimal Donasi</p>
             <p className="font-mono text-2xl md:text-3xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5 tabular-nums tracking-tight">
               50 Ribu
             </p>
             <p className="text-[11px] text-neutral-400 mt-0.5">/ bulan (bebas tanpa batas)</p>
           </div>
-          <div className="col-span-2 md:col-span-1 rounded-xl border border-outline/70 bg-surface p-4 text-center transition-all hover:border-emerald-600/30">
+          <div className="col-span-2 md:col-span-1 rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-4 text-center transition-all hover:shadow-md">
             <p className="text-xs text-neutral-500 font-medium">Periode Berjalan</p>
             <p className="font-mono text-lg md:text-xl font-semibold text-heading mt-2 truncate tracking-tight">
               {labelBulan}
@@ -217,7 +247,7 @@ export default async function PublicHomePage() {
 
           <div className="grid md:grid-cols-2 gap-4 items-stretch">
             {/* Kartu 1: Rekening Bank Kas */}
-            <div className="rounded-xl border border-outline/70 bg-surface p-6 flex flex-col justify-between">
+            <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6 flex flex-col justify-between">
               <div>
                 <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full inline-block">
                   Transfer Bank Kas
@@ -249,7 +279,7 @@ export default async function PublicHomePage() {
             </div>
 
             {/* Kartu 2: QRIS Resmi */}
-            <div className="rounded-xl border border-outline/70 bg-surface p-6 flex flex-col items-center justify-center text-center">
+            <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6 flex flex-col items-center justify-center text-center">
               <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full mb-3.5 inline-block">
                 Scan QRIS Resmi
               </span>

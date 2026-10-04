@@ -24,12 +24,31 @@ export default async function AdminHutangPage() {
       .select("nominal"),
   ]);
 
+  const pembayaranList = (pembayaranData ?? []) as PembayaranHutang[];
+
+  // Sinkronkan akumulasi terbayar per kreditor dari riwayat pembayaran secara dinamis
+  const hutangList = ((hutangData ?? []) as SumberHutang[]).map((h) => {
+    const totalBayarToko = pembayaranList
+      .filter((p) => p.sumber_hutang_id === h.id)
+      .reduce((sum, p) => sum + (p.nominal || 0), 0);
+    const terbayarFinal = Math.max(h.terbayar || 0, totalBayarToko);
+    let status = h.status;
+    if (terbayarFinal >= h.nominal && h.nominal > 0) status = "lunas";
+    else if (terbayarFinal > 0) status = "sebagian";
+
+    return {
+      ...h,
+      terbayar: terbayarFinal,
+      status,
+    };
+  });
+
   const totalDonasiTerkumpul = (donasiData ?? []).reduce((acc, p) => acc + (p.nominal || 0), 0);
 
   return (
     <AdminHutangClient
-      initialList={(hutangData ?? []) as SumberHutang[]}
-      initialPembayaran={(pembayaranData ?? []) as PembayaranHutang[]}
+      initialList={hutangList}
+      initialPembayaran={pembayaranList}
       totalDonasiTerkumpul={totalDonasiTerkumpul}
       adminNama={adminUser.nama}
     />

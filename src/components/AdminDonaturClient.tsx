@@ -460,7 +460,7 @@ export default function AdminDonaturClient({
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl border border-outline-variant bg-surface overflow-hidden shadow-xs">
+      <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-surface-container-low border-b border-outline-variant">

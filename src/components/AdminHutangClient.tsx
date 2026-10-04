@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatRupiah, formatTanggal } from "@/lib/utils";
+import { formatRupiah, formatTanggal, formatPersen, hitungProgress } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import {
   Plus, Pencil, Trash2, Building2, CheckCircle2, Clock, X,
   AlertCircle, User, ShieldAlert, Receipt, Upload, Eye,
   ExternalLink, FileText, Check, ArrowUpRight, DollarSign,
-  Maximize2, Download
+  Maximize2, Download, MoreVertical
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 
@@ -51,6 +51,15 @@ export default function AdminHutangClient({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    if (openMenuId !== null) {
+      window.addEventListener("click", handleClickOutside);
+      return () => window.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuId]);
 
   // Form Sumber Hutang
   const [form, setForm] = useState({
@@ -72,7 +81,11 @@ export default function AdminHutangClient({
   });
 
   const totalHutang = list.reduce((s, h) => s + h.nominal, 0);
-  const totalTerbayar = list.reduce((s, h) => s + (h.terbayar || 0), 0);
+
+  // Total Terbayar dihitung secara akurat dari riwayat pembayaran kwitansi & data kreditor
+  const totalTerbayarTransaksi = pembayaranList.reduce((s, p) => s + (p.nominal || 0), 0);
+  const totalTerbayarList = list.reduce((s, h) => s + (h.terbayar || 0), 0);
+  const totalTerbayar = Math.max(totalTerbayarTransaksi, totalTerbayarList);
   const totalSisa = Math.max(0, totalHutang - totalTerbayar);
 
   // Saldo Kas Real Saat Ini = Total Donasi Terkumpul (All-Time) - Total Hutang Pernah Dibayarkan (All-Time)
@@ -95,11 +108,15 @@ export default function AdminHutangClient({
   };
 
   const openEdit = (item: SumberHutang) => {
+    const itemBayarList = pembayaranList.filter((p) => p.sumber_hutang_id === item.id);
+    const storeBayarTotal = itemBayarList.reduce((sum, p) => sum + (p.nominal || 0), 0);
+    const terbayarAkurat = Math.max(item.terbayar || 0, storeBayarTotal);
+
     setEditing(item);
     setForm({
       nama_kreditor: item.nama_kreditor,
       nominal: item.nominal,
-      terbayar: item.terbayar,
+      terbayar: terbayarAkurat,
       keterangan: item.keterangan ?? "",
       status: item.status,
     });
@@ -118,10 +135,14 @@ export default function AdminHutangClient({
     }
     setError(null);
 
+    const itemBayarList = editing ? pembayaranList.filter((p) => p.sumber_hutang_id === editing.id) : [];
+    const storeBayarTotal = itemBayarList.reduce((sum, p) => sum + (p.nominal || 0), 0);
+    const finalTerbayar = Math.max(form.terbayar, storeBayarTotal);
+
     let statusFinal = form.status;
-    if (form.terbayar >= form.nominal) {
+    if (finalTerbayar >= form.nominal) {
       statusFinal = "lunas";
-    } else if (form.terbayar > 0) {
+    } else if (finalTerbayar > 0) {
       statusFinal = "sebagian";
     } else {
       statusFinal = "belum_lunas";
@@ -134,7 +155,7 @@ export default function AdminHutangClient({
           .update({
             nama_kreditor: form.nama_kreditor.trim(),
             nominal: form.nominal,
-            terbayar: form.terbayar,
+            terbayar: finalTerbayar,
             keterangan: form.keterangan || null,
             status: statusFinal,
             updated_by_name: adminNama,
@@ -173,6 +194,13 @@ export default function AdminHutangClient({
   };
 
   const handleDeleteHutang = (item: SumberHutang) => {
+    const hasTransactions = pembayaranList.some((p) => p.sumber_hutang_id === item.id);
+    if (hasTransactions) {
+      alert("Tidak dapat menghapus pihak kreditor yang sudah memiliki riwayat transaksi pembayaran.");
+      setDeleteConfirm(null);
+      return;
+    }
+
     startTransition(async () => {
       const { error: err } = await supabase.from("sumber_hutang").delete().eq("id", item.id);
       if (err) {
@@ -180,7 +208,6 @@ export default function AdminHutangClient({
         return;
       }
       setList((prev) => prev.filter((h) => h.id !== item.id));
-      setPembayaranList((prev) => prev.filter((p) => p.sumber_hutang_id !== item.id));
       setDeleteConfirm(null);
     });
   };
@@ -448,15 +475,13 @@ export default function AdminHutangClient({
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-outline-variant bg-surface p-5 shadow-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5 border-t-2 border-t-primary/60">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
               Total Kewajiban Hutang
             </p>
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Building2 className="h-5 w-5" />
-            </div>
+            <Building2 className="h-5 w-5 text-primary/70" />
           </div>
           <p className="font-mono text-2xl font-black text-on-surface tabular-nums">
             {formatRupiah(totalHutang)}
@@ -464,14 +489,12 @@ export default function AdminHutangClient({
           <p className="text-[11px] text-on-surface-variant mt-1.5">{list.length} Pihak Kreditor / Toko</p>
         </div>
 
-        <div className="rounded-2xl border border-outline-variant bg-surface p-5 shadow-xs">
+        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5 border-t-2 border-t-status-success/50">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
               Telah Disalurkan / Terbayar
             </p>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Receipt className="h-5 w-5" />
-            </div>
+            <Receipt className="h-5 w-5 text-status-success/70" />
           </div>
           <p className="font-mono text-2xl font-black text-status-success tabular-nums">
             {formatRupiah(totalTerbayar)}
@@ -481,29 +504,27 @@ export default function AdminHutangClient({
           </p>
         </div>
 
-        <div className="rounded-2xl border border-outline-variant bg-surface p-5 shadow-xs">
+        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5 border-t-2 border-t-status-danger/50">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
               Sisa Kewajiban Hutang
             </p>
-            <div className="p-2 rounded-xl bg-rose-500/10 text-status-danger">
-              <Clock className="h-5 w-5" />
-            </div>
+            <Clock className="h-5 w-5 text-status-danger/70" />
           </div>
           <p className="font-mono text-2xl font-black text-status-danger tabular-nums">
             {formatRupiah(totalSisa)}
           </p>
           <p className="text-[11px] text-on-surface-variant mt-1.5">
             {totalHutang > 0
-              ? `${Math.round((totalTerbayar / totalHutang) * 100)}% Terlunasi`
+              ? `${formatPersen(totalTerbayar, totalHutang)} Terlunasi`
               : "0%"}
           </p>
         </div>
       </div>
 
       {/* Main Table: Sumber Hutang & Action Bar */}
-      <div className="rounded-2xl border border-outline-variant bg-surface overflow-hidden shadow-xs">
-        <div className="p-4 border-b border-outline-variant bg-surface-container-low/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] overflow-hidden">
+        <div className="p-4 border-b border-outline-variant/60 bg-surface-container-low/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-on-surface">Daftar Pihak Kreditor</h2>
             <p className="text-xs text-on-surface-variant">
@@ -538,10 +559,21 @@ export default function AdminHutangClient({
                 </tr>
               ) : (
                 list.map((item, idx) => {
-                  const sisa = Math.max(0, item.nominal - item.terbayar);
-                  const persen = item.nominal > 0 ? Math.min(100, Math.round((item.terbayar / item.nominal) * 100)) : 0;
                   const itemBayarList = pembayaranList.filter((p) => p.sumber_hutang_id === item.id);
                   const countKwitansi = itemBayarList.filter((p) => p.bukti_url).length;
+                  const totalTerbayarItem = Math.max(
+                    item.terbayar || 0,
+                    itemBayarList.reduce((sum, p) => sum + (p.nominal || 0), 0)
+                  );
+                  const sisa = Math.max(0, item.nominal - totalTerbayarItem);
+                  const persenStr = formatPersen(totalTerbayarItem, item.nominal);
+                  const persenNum = hitungProgress(totalTerbayarItem, item.nominal);
+                  const statusFinal =
+                    totalTerbayarItem >= item.nominal && item.nominal > 0
+                      ? "lunas"
+                      : totalTerbayarItem > 0
+                      ? "sebagian"
+                      : item.status;
 
                   return (
                     <tr key={item.id} className="hover:bg-surface-container-low transition-colors">
@@ -569,7 +601,7 @@ export default function AdminHutangClient({
                         {formatRupiah(item.nominal)}
                       </td>
                       <td className="px-4 py-3.5 text-right font-mono font-semibold text-status-success tabular-nums">
-                        {item.terbayar > 0 ? formatRupiah(item.terbayar) : "-"}
+                        {totalTerbayarItem > 0 ? formatRupiah(totalTerbayarItem) : "-"}
                       </td>
                       <td className="px-4 py-3.5 text-right font-mono font-bold text-status-danger tabular-nums">
                         {formatRupiah(sisa)}
@@ -579,34 +611,34 @@ export default function AdminHutangClient({
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold capitalize",
-                              item.status === "lunas"
+                              statusFinal === "lunas"
                                 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                : item.status === "sebagian"
+                                : statusFinal === "sebagian"
                                 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
                                 : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20"
                             )}
                           >
-                            {item.status === "lunas" ? (
+                            {statusFinal === "lunas" ? (
                               <CheckCircle2 className="h-3 w-3" />
-                            ) : item.status === "sebagian" ? (
+                            ) : statusFinal === "sebagian" ? (
                               <Clock className="h-3 w-3" />
                             ) : (
                               <ShieldAlert className="h-3 w-3" />
                             )}
-                            {item.status.replace("_", " ")} ({persen}%)
+                            {statusFinal.replace("_", " ")} ({persenStr})
                           </span>
                           {/* Mini Progress Bar */}
                           <div className="w-24 bg-surface-container rounded-full h-1.5 overflow-hidden">
                             <div
                               className={cn(
                                 "h-full transition-all duration-300",
-                                item.status === "lunas"
+                                statusFinal === "lunas"
                                   ? "bg-emerald-500"
-                                  : item.status === "sebagian"
+                                  : statusFinal === "sebagian"
                                   ? "bg-amber-500"
                                   : "bg-rose-500"
                               )}
-                              style={{ width: `${persen}%` }}
+                              style={{ width: `${Math.max(persenNum, totalTerbayarItem > 0 ? 2 : 0)}%` }}
                             />
                           </div>
                         </div>
@@ -626,7 +658,7 @@ export default function AdminHutangClient({
                           <span>{itemBayarList.length} Kwitansi</span>
                         </button>
                       </td>
-                      <td className="px-4 py-3.5 text-right">
+                      <td className="px-4 py-3.5 text-right relative">
                         <div className="flex items-center justify-end gap-1.5">
                           {sisa > 0 && (
                             <button
@@ -638,20 +670,67 @@ export default function AdminHutangClient({
                               <span className="hidden md:inline">Bayar</span>
                             </button>
                           )}
-                          <button
-                            onClick={() => openEdit(item)}
-                            className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
-                            title="Edit Sumber Hutang"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirm(item)}
-                            className="rounded-lg p-1.5 text-on-surface-variant hover:bg-error-container hover:text-status-danger transition-colors"
-                            title="Hapus Sumber Hutang"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+
+                          {/* Menu Titik Tiga (Three Dots) */}
+                          <div className="relative inline-block text-left">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === item.id ? null : item.id);
+                              }}
+                              type="button"
+                              className={cn(
+                                "rounded-lg p-1.5 transition-colors",
+                                openMenuId === item.id
+                                  ? "bg-surface-container text-on-surface"
+                                  : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+                              )}
+                              title="Menu Opsi Kreditor"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+
+                            {openMenuId === item.id && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-surface shadow-xl ring-1 ring-black/[0.08] dark:ring-white/[0.08] py-1.5 z-30"
+                              >
+                                <button
+                                  onClick={() => {
+                                    setOpenMenuId(null);
+                                    openEdit(item);
+                                  }}
+                                  type="button"
+                                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-on-surface hover:bg-surface-container transition-colors text-left"
+                                >
+                                  <Pencil className="h-3.5 w-3.5 text-on-surface-variant" />
+                                  <span>Edit Sumber Hutang</span>
+                                </button>
+
+                                {itemBayarList.length > 0 ? (
+                                  <div
+                                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-on-surface-variant/40 cursor-not-allowed select-none border-t border-outline-variant/40"
+                                    title="Tidak dapat dihapus karena sudah ada riwayat transaksi pembayaran"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="truncate">Hapus (Ada Transaksi)</span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                      setDeleteConfirm(item);
+                                    }}
+                                    type="button"
+                                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-status-danger hover:bg-error-container hover:text-on-error-container transition-colors text-left border-t border-outline-variant/40"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <span>Hapus Sumber Hutang</span>
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>

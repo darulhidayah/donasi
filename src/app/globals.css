@@ -2,26 +2,26 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ============ VERCEL GEIST DESIGN SYSTEM 2026 (REFINED) ============ */
+/* ============ MODERN FINANCIAL DESIGN SYSTEM — WARM MINIMAL ============ */
 
-/* LIGHT THEME: Full White Canvas, Soft Non-Black Borders, Gentle Typography */
+/* LIGHT THEME: Warm Off-White Canvas — bukan putih steril, tidak panas */
 :root,
 .light {
-  --c-background: 255 255 255;
-  --c-on-background: 39 39 42;
+  --c-background: 249 248 246;      /* Warm off-white — linen, bukan kertas */
+  --c-on-background: 28 28 30;
 
-  --c-surface: 255 255 255;
-  --c-on-surface: 39 39 42;
-  --c-surface-variant: 248 249 250;
-  --c-on-surface-variant: 100 116 139;
+  --c-surface: 255 255 255;          /* Card tetap putih — kontras di atas warm bg */
+  --c-on-surface: 28 28 30;
+  --c-surface-variant: 246 246 244;
+  --c-on-surface-variant: 99 110 123;
 
   --c-surface-container-lowest: 255 255 255;
-  --c-surface-container-low: 250 250 252;
-  --c-surface-container: 244 245 248;
-  --c-surface-container-high: 228 231 236;
+  --c-surface-container-low: 245 245 243;
+  --c-surface-container: 238 238 236;
+  --c-surface-container-high: 229 229 227;
 
-  --c-outline: 235 237 240;
-  --c-outline-variant: 243 244 246;
+  --c-outline: 218 219 220;          /* Subtle — hampir tidak kelihatan di light */
+  --c-outline-variant: 235 235 234;
 
   --c-primary: 5 150 105;
   --c-on-primary: 255 255 255;
@@ -30,42 +30,42 @@
   --c-primary-dark: 4 120 87;
   --c-primary-light: 16 185 129;
 
-  --c-secondary: 100 116 139;
+  --c-secondary: 99 110 123;
   --c-on-secondary: 255 255 255;
   --c-secondary-container: 241 245 249;
   --c-on-secondary-container: 30 41 59;
 
-  --c-heading: 6 95 70; /* Emerald 800 - Aksen Hijau Teduh untuk Font Tebal / Judul Utama */
+  --c-heading: 6 95 70;
 
-  --c-error: 225 29 72;
+  --c-error: 220 38 68;
   --c-on-error: 255 255 255;
   --c-error-container: 255 241 242;
-  --c-on-error-container: 159 18 57;
+  --c-on-error-container: 153 18 52;
 
   --c-status-success: 16 185 129;
   --c-status-warning: 245 158 11;
-  --c-status-danger: 225 29 72;
+  --c-status-danger: 220 38 68;
 
   color-scheme: light;
 }
 
-/* DARK THEME: Vercel Signature Pure Black, Subtle Glass, Soft Zinc Hairlines */
+/* DARK THEME: Warm Near-Black — bukan void, ada kedalaman */
 .dark {
-  --c-background: 0 0 0;
-  --c-on-background: 237 237 237;
+  --c-background: 10 10 10;          /* Near-black — bukan void hitam */
+  --c-on-background: 230 230 228;
 
-  --c-surface: 10 10 10;
-  --c-on-surface: 237 237 237;
-  --c-surface-variant: 18 18 18;
-  --c-on-surface-variant: 161 161 161;
+  --c-surface: 18 18 18;             /* Card punya lift di atas bg */
+  --c-on-surface: 230 230 228;
+  --c-surface-variant: 24 24 24;
+  --c-on-surface-variant: 155 155 155;
 
-  --c-surface-container-lowest: 0 0 0;
-  --c-surface-container-low: 12 12 12;
-  --c-surface-container: 20 20 20;
-  --c-surface-container-high: 34 34 34;
+  --c-surface-container-lowest: 10 10 10;
+  --c-surface-container-low: 24 24 24;
+  --c-surface-container: 30 30 30;
+  --c-surface-container-high: 40 40 40;
 
-  --c-outline: 39 39 42;
-  --c-outline-variant: 28 28 30;
+  --c-outline: 42 42 45;             /* Sangat subtle — tidak memotong seperti pisau */
+  --c-outline-variant: 32 32 35;
 
   --c-primary: 16 185 129;
   --c-on-primary: 0 0 0;
@@ -74,12 +74,12 @@
   --c-primary-dark: 5 150 105;
   --c-primary-light: 52 211 153;
 
-  --c-secondary: 161 161 161;
+  --c-secondary: 155 155 155;
   --c-on-secondary: 0 0 0;
-  --c-secondary-container: 24 24 27;
-  --c-on-secondary-container: 244 244 245;
+  --c-secondary-container: 26 26 28;
+  --c-on-secondary-container: 240 240 240;
 
-  --c-heading: 110 231 183; /* Emerald 300 - Aksen Hijau Lembut di Atas Obsidian */
+  --c-heading: 110 231 183;
 
   --c-error: 251 113 133;
   --c-on-error: 76 5 25;
@@ -192,23 +192,63 @@ body {
 
 /* MODAL CARD: 100% SOLID BACKGROUND (ANTI GELAP / ANTI TRANSPARAN) */
 .modal-panel {
-  background-color: rgb(var(--c-surface-container-lowest)) !important;
+  background-color: rgb(var(--c-surface)) !important;
   color: rgb(var(--c-on-surface)) !important;
-  border: 1px solid rgb(var(--c-outline)) !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgb(var(--c-outline-variant)) !important;
 }
 
-/* SIDEBAR PANEL: 100% SOLID BACKGROUND UNTUK DESKTOP & MOBILE */
+/* Light: shadow lembut warm */
+:root .modal-panel,
+.light .modal-panel {
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Dark: shadow gelap dalam + subtle ring */
+.dark .modal-panel {
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+/* SIDEBAR PANEL: Shadow-only, tanpa border kaku */
 .sidebar-panel {
   background-color: rgb(var(--c-surface)) !important;
   color: rgb(var(--c-on-surface)) !important;
   opacity: 1 !important;
 }
 
-/* CUSTOM SCROLLBAR VERCEL STYLE */
+/* Light sidebar: shadow tipis ke kanan */
+:root .sidebar-panel,
+.light .sidebar-panel {
+  box-shadow: 1px 0 0 0 rgba(0, 0, 0, 0.06) !important;
+  border-right: none !important;
+}
+
+/* Dark sidebar: hairline putih sangat transparan */
+.dark .sidebar-panel {
+  box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.05) !important;
+  border-right: none !important;
+}
+
+/* CARD UTILITY: Shadow-first, border minimal */
+.card-surface {
+  background-color: rgb(var(--c-surface));
+  border-radius: 0.75rem; /* rounded-xl */
+}
+
+:root .card-surface,
+.light .card-surface {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  outline: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .card-surface {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  outline: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* CUSTOM SCROLLBAR */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;

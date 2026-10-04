@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatRupiah, formatTanggal, cn } from "@/lib/utils";
+import { formatRupiah, formatTanggal, formatPersen, hitungProgress, cn } from "@/lib/utils";
 import {
   Building2, Receipt, Eye, ExternalLink, X, CheckCircle2,
   Clock, ShieldAlert, ArrowUpRight, Calendar, User, FileText,
@@ -47,10 +47,14 @@ export default function PublicHutangTimeline({
       : riwayatWithKreditor.filter((p) => p.sumber_hutang_id === selectedFilter);
 
   const totalKewajiban = sumberHutangList.reduce((s, h) => s + h.nominal, 0);
-  const totalTerbayar = sumberHutangList.reduce((s, h) => s + (h.terbayar || 0), 0);
+  const totalTerbayar = sumberHutangList.reduce((s, h) => {
+    const tokoBayar = riwayatWithKreditor
+      .filter((p) => p.sumber_hutang_id === h.id)
+      .reduce((acc, p) => acc + (p.nominal || 0), 0);
+    return s + Math.max(h.terbayar || 0, tokoBayar);
+  }, 0);
   const totalSisa = Math.max(0, totalKewajiban - totalTerbayar);
-  const persenTerbayar =
-    totalKewajiban > 0 ? Math.min(100, Math.round((totalTerbayar / totalKewajiban) * 100)) : 0;
+  const persenTerbayar = formatPersen(totalTerbayar, totalKewajiban);
 
   return (
     <section className="space-y-6">
@@ -77,7 +81,7 @@ export default function PublicHutangTimeline({
               {formatRupiah(totalTerbayar)}
             </span>
             <span className="text-[11px] text-neutral-400">
-              ({persenTerbayar}% dari {formatRupiah(totalKewajiban)})
+              ({persenTerbayar} dari {formatRupiah(totalKewajiban)})
             </span>
           </div>
         </div>
@@ -85,19 +89,31 @@ export default function PublicHutangTimeline({
         {/* 2. Grid Kartu Toko (Langsung level 1: Toko A, Toko B, Toko C tanpa box luar) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {sumberHutangList.map((h) => {
-            const sisa = Math.max(0, h.nominal - h.terbayar);
-            const persen = h.nominal > 0 ? Math.min(100, Math.round((h.terbayar / h.nominal) * 100)) : 0;
-            const kwitansiCount = riwayatWithKreditor.filter((p) => p.sumber_hutang_id === h.id && p.bukti_url).length;
+            const hBayarList = riwayatWithKreditor.filter((p) => p.sumber_hutang_id === h.id);
+            const tokoBayar = Math.max(
+              h.terbayar || 0,
+              hBayarList.reduce((acc, p) => acc + (p.nominal || 0), 0)
+            );
+            const sisa = Math.max(0, h.nominal - tokoBayar);
+            const persenStr = formatPersen(tokoBayar, h.nominal);
+            const persenNum = hitungProgress(tokoBayar, h.nominal);
+            const tokoStatus =
+              tokoBayar >= h.nominal && h.nominal > 0
+                ? "lunas"
+                : tokoBayar > 0
+                ? "sebagian"
+                : h.status;
+            const kwitansiCount = hBayarList.filter((p) => p.bukti_url).length;
             const isSelected = selectedFilter === h.id;
 
             return (
               <div
                 key={h.id}
                 className={cn(
-                  "rounded-xl border transition-all duration-200 p-5 flex flex-col justify-between bg-surface",
+                  "rounded-xl transition-all duration-200 p-5 flex flex-col justify-between bg-surface",
                   isSelected
-                    ? "border-emerald-500 ring-1 ring-emerald-500/20 shadow-xs"
-                    : "border-outline/70 hover:border-emerald-600/40"
+                    ? "ring-2 ring-emerald-500 shadow-sm"
+                    : "shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] hover:ring-emerald-500/40"
                 )}
               >
                 <div>
@@ -108,21 +124,21 @@ export default function PublicHutangTimeline({
                     <span
                       className={cn(
                         "text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize shrink-0 inline-flex items-center gap-1",
-                        h.status === "lunas"
+                        tokoStatus === "lunas"
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                          : h.status === "sebagian"
+                          : tokoStatus === "sebagian"
                           ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
                           : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
                       )}
                     >
-                      {h.status === "lunas" ? (
+                      {tokoStatus === "lunas" ? (
                         <CheckCircle2 className="h-3 w-3" />
-                      ) : h.status === "sebagian" ? (
+                      ) : tokoStatus === "sebagian" ? (
                         <Clock className="h-3 w-3" />
                       ) : (
                         <ShieldAlert className="h-3 w-3" />
                       )}
-                      {h.status.replace("_", " ")}
+                      {tokoStatus.replace("_", " ")}
                     </span>
                   </div>
 
@@ -135,7 +151,7 @@ export default function PublicHutangTimeline({
                   <div className="flex justify-between items-baseline text-xs">
                     <span className="text-neutral-500 text-[11px]">Terbayar:</span>
                     <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                      {formatRupiah(h.terbayar)} ({persen}%)
+                      {formatRupiah(tokoBayar)} ({persenStr})
                     </span>
                   </div>
 
@@ -144,13 +160,13 @@ export default function PublicHutangTimeline({
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
-                        h.status === "lunas"
+                        tokoStatus === "lunas"
                           ? "bg-emerald-500"
-                          : h.status === "sebagian"
+                          : tokoStatus === "sebagian"
                           ? "bg-amber-500"
                           : "bg-rose-500"
                       )}
-                      style={{ width: `${persen}%` }}
+                      style={{ width: `${Math.max(persenNum, tokoBayar > 0 ? 2 : 0)}%` }}
                     />
                   </div>
 
@@ -257,7 +273,7 @@ export default function PublicHutangTimeline({
                 </div>
 
                 {/* Event Card */}
-                <div className="rounded-xl border border-outline/60 bg-surface p-4 transition-all hover:border-emerald-600/30">
+                <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-4 transition-all hover:ring-emerald-500/30">
                   <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5 mb-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-base font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums tracking-tight">

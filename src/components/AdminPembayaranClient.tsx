@@ -395,7 +395,7 @@ export default function AdminPembayaranClient({
       )}
 
       {/* Table */}
-      <div className="rounded-2xl border border-outline-variant bg-surface overflow-hidden shadow-xs">
+      <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] overflow-hidden">
         {loadingBulan ? (
           <div className="py-16 text-center text-on-surface-variant">Memuat data bulan...</div>
         ) : (

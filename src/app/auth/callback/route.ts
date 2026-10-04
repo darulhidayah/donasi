@@ -5,8 +5,15 @@ import type { Database } from "@/lib/database.types";
 type AdminUser = Database["public"]["Tables"]["admin_users"]["Row"];
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get("code");
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  const isLocal = requestUrl.hostname === "localhost" || requestUrl.hostname === "127.0.0.1";
+
+  const origin = isLocal
+    ? requestUrl.origin
+    : (forwardedHost ? `${forwardedProto}://${forwardedHost}` : requestUrl.origin);
 
   if (code) {
     const supabase = await createServerSupabase();

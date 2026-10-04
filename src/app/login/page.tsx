@@ -13,7 +13,8 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError(null);
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    // Menyesuaikan origin secara dinamis (localhost:3000 saat lokal/dev atau donasi.mdh.or.id saat online)
+    const siteUrl = window.location.origin;
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${siteUrl}/auth/callback` },
@@ -40,10 +41,10 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-sm">
-        <div className="rounded-3xl border border-outline-variant bg-surface p-8 shadow-xl">
+        <div className="rounded-2xl bg-surface shadow-lg ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-8">
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-container-lowest border border-outline-variant p-2 mb-4 shadow-sm">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-xl bg-surface-container-lowest ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-2 mb-4 shadow-xs">
               <img src="/logo.png" alt="Logo Masjid Darul Hidayah" className="h-full w-full object-contain" />
             </div>
             <h1 className="text-2xl font-black text-on-surface">Login Admin</h1>

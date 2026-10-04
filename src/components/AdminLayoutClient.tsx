@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import ThemeToggle from "./ThemeToggle";
 import {
   LayoutDashboard, Users, Banknote, FileText,
-  Building2, UserCog, LogOut, Menu,
+  Building2, UserCog, LogOut, Menu, Globe, ExternalLink,
 } from "lucide-react";
 
 interface AdminUser {
@@ -48,9 +48,9 @@ export default function AdminLayoutClient({ children, adminUser, config }: Props
   );
 
   const Sidebar = () => (
-    <div className="flex h-full flex-col sidebar-panel bg-surface border-r border-outline-variant">
+    <div className="flex h-full flex-col sidebar-panel bg-surface">
       {/* Header Logo */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-outline-variant">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-outline-variant/60">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-surface-container-lowest border border-outline-variant p-1 shadow-xs">
             <img src="/logo.png" alt="Logo MDH" className="h-full w-full object-contain" />
@@ -89,9 +89,22 @@ export default function AdminLayoutClient({ children, adminUser, config }: Props
         })}
       </nav>
 
-      {/* Footer User Info */}
-      <div className="border-t border-outline-variant p-3 bg-surface-container-low">
-        <div className="flex items-center gap-2 px-2 py-1.5 mb-2">
+      {/* Footer User Info & Lihat Website */}
+      <div className="border-t border-outline-variant/60 p-3 bg-surface-container-low space-y-2">
+        {/* Tombol Lihat Halaman Depan */}
+        <Link
+          href="/"
+          className="flex w-full items-center justify-between rounded-xl border border-outline-variant/60 bg-surface px-3 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container hover:text-primary transition-colors shadow-2xs group"
+          title="Buka website publik donasi tanpa logout"
+        >
+          <div className="flex items-center gap-2">
+            <Globe className="h-3.5 w-3.5 text-primary group-hover:scale-110 transition-transform" />
+            <span>Lihat Halaman Depan</span>
+          </div>
+          <ExternalLink className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+        </Link>
+
+        <div className="flex items-center gap-2 px-2 py-1">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-container text-xs font-bold text-on-primary-container shrink-0">
             {adminUser.nama.charAt(0).toUpperCase()}
           </div>
@@ -103,7 +116,7 @@ export default function AdminLayoutClient({ children, adminUser, config }: Props
         <button
           onClick={handleLogout}
           type="button"
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant bg-surface px-3 py-2 text-xs font-medium text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant/60 bg-surface px-3 py-2 text-xs font-medium text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors"
         >
           <LogOut className="h-3.5 w-3.5" /> Keluar Sesi
         </button>
@@ -134,7 +147,7 @@ export default function AdminLayoutClient({ children, adminUser, config }: Props
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile Header Bar */}
-        <header className="flex items-center justify-between border-b border-outline-variant bg-surface px-4 py-3 md:hidden">
+        <header className="flex items-center justify-between border-b border-outline-variant/60 bg-surface px-4 py-3 md:hidden">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -148,7 +161,17 @@ export default function AdminLayoutClient({ children, adminUser, config }: Props
               {config.nama_masjid ?? "Donasi MDH"}
             </p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              title="Lihat Halaman Depan"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-outline-variant/60 bg-surface text-xs font-semibold text-on-surface hover:text-primary hover:bg-surface-container transition-colors shadow-2xs"
+            >
+              <Globe className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden xs:inline">Web</span>
+            </Link>
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Content Body */}

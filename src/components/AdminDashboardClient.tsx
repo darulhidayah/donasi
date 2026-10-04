@@ -63,7 +63,9 @@ export default function AdminDashboardClient({
       </div>
 
       {/* Progress Bar Hutang Terpadu */}
-      <div className="rounded-3xl bg-surface border border-outline-variant p-6 shadow-xs">
+      <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6 relative overflow-hidden">
+        {/* Subtle top hairline emerald */}
+        <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
@@ -83,20 +85,20 @@ export default function AdminDashboardClient({
           </div>
         </div>
 
-        {/* Bar */}
-        <div className="w-full bg-surface-container-high rounded-full h-4 overflow-hidden">
+      {/* Bar */}
+        <div className="w-full bg-surface-container-high rounded-full h-1.5 overflow-hidden mt-1">
           <div
-            className="h-full bg-primary rounded-full transition-all duration-1000 shadow-sm"
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full transition-all duration-1000"
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #059669, #10b981)' }}
           />
         </div>
 
-        <div className="flex justify-between items-center mt-3 text-xs">
+        <div className="flex justify-between items-center mt-2.5 text-xs">
           <span className="text-on-surface-variant font-medium">
-            Telah Terkumpul:{" "}
-            <strong className="text-on-surface">{formatRupiah(totalSemuaPenerimaan)}</strong>
+            Terkumpul:{" "}
+            <strong className="font-mono tabular-nums text-on-surface">{formatRupiah(totalSemuaPenerimaan)}</strong>
           </span>
-          <span className="font-bold text-primary bg-primary-container px-2.5 py-0.5 rounded-full">
+          <span className="font-bold text-primary bg-primary-container px-2.5 py-0.5 rounded-full text-[11px]">
             {progress}% Tercapai
           </span>
         </div>
@@ -109,36 +111,40 @@ export default function AdminDashboardClient({
         )}
       </div>
 
-      {/* 4 Stat Cards Semantik (Tanpa Hardcoded Colors) */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      {/* 4 Stat Cards Semantik */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard
-          icon={<Users className="h-5 w-5 text-primary" />}
+          icon={<Users className="h-4 w-4" />}
           label="Donatur Aktif"
           value={donaturAktif.length.toString() + " Orang"}
           sub="Target minimal 50rb"
+          accentClass="border-t-primary/60"
         />
         <StatCard
-          icon={<CheckCircle2 className="h-5 w-5 text-status-success" />}
+          icon={<CheckCircle2 className="h-4 w-4 text-status-success" />}
           label="Sudah Bayar"
           value={sudahBayar.length.toString() + " Orang"}
           sub={labelBulanIni}
+          accentClass="border-t-status-success/50"
         />
         <StatCard
-          icon={<XCircle className="h-5 w-5 text-status-danger" />}
+          icon={<XCircle className="h-4 w-4 text-status-danger" />}
           label="Belum Bayar"
           value={belumBayar.length.toString() + " Orang"}
           sub={labelBulanIni}
+          accentClass="border-t-status-danger/50"
         />
         <StatCard
-          icon={<Banknote className="h-5 w-5 text-primary" />}
+          icon={<Banknote className="h-4 w-4 text-primary" />}
           label="Masuk Bulan Ini"
           value={formatRupiah(totalBulanIni)}
           sub={labelBulanIni}
+          accentClass="border-t-primary/60"
         />
       </div>
 
       {/* Rincian Sumber Hutang (Toko A, Toko B, dll) */}
-      <div className="rounded-3xl border border-outline-variant bg-surface p-6 shadow-xs">
+      <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
@@ -163,7 +169,7 @@ export default function AdminDashboardClient({
               return (
                 <div
                   key={h.id}
-                  className="rounded-2xl bg-surface-container-low border border-outline-variant p-4 flex flex-col justify-between"
+                  className="rounded-lg bg-surface-container-low ring-1 ring-black/[0.04] dark:ring-white/[0.05] p-4 flex flex-col justify-between"
                 >
                   <div>
                     <p className="font-bold text-sm text-on-surface truncate">{h.nama_kreditor}</p>
@@ -171,14 +177,19 @@ export default function AdminDashboardClient({
                       {h.keterangan || "Material pembangunan masjid"}
                     </p>
                   </div>
-                  <div className="mt-3 pt-2.5 border-t border-outline-variant flex items-baseline justify-between text-xs">
+                  <div className="mt-3 pt-2.5 border-t border-outline-variant/60 flex items-baseline justify-between text-xs">
                     <div>
-                      <p className="text-[10px] text-on-surface-variant">Nominal</p>
-                      <p className="font-bold text-on-surface">{formatRupiah(h.nominal)}</p>
+                      <p className="text-[10px] text-on-surface-variant">Pagu Hutang</p>
+                      <p className="font-bold font-mono tabular-nums text-on-surface">{formatRupiah(h.nominal)}</p>
+                      {h.terbayar > 0 && (
+                        <p className="text-[10px] text-status-success font-mono font-semibold">
+                          Terbayar: {formatRupiah(h.terbayar)}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-on-surface-variant">Sisa</p>
-                      <p className="font-bold text-status-danger">{formatRupiah(sisa)}</p>
+                      <p className="text-[10px] text-on-surface-variant">Sisa Kewajiban</p>
+                      <p className="font-bold font-mono tabular-nums text-status-danger">{formatRupiah(sisa)}</p>
                     </div>
                   </div>
                 </div>
@@ -189,10 +200,10 @@ export default function AdminDashboardClient({
       </div>
 
       {/* Status Pembayaran Bulan Ini: Sudah vs Belum */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {/* Sudah Bayar */}
-        <div className="rounded-3xl bg-surface border border-outline-variant p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-4 border-b border-outline-variant pb-3">
+        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5">
+          <div className="flex items-center justify-between mb-4 border-b border-outline-variant/60 pb-3">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-status-success" />
               <h2 className="font-bold text-on-surface text-sm">Sudah Bayar — {labelBulanIni}</h2>
@@ -212,11 +223,11 @@ export default function AdminDashboardClient({
                 return (
                   <div
                     key={d.id}
-                    className="flex items-center justify-between rounded-xl px-3 py-2 bg-surface-container-low text-xs transition-colors hover:bg-surface-container"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 bg-surface-container-low text-xs transition-colors hover:bg-surface-container"
                   >
                     <span className="font-medium text-on-surface">{d.nama}</span>
                     <div className="text-right">
-                      <span className="text-status-success font-bold">
+                      <span className="text-status-success font-bold font-mono tabular-nums">
                         {formatRupiah(bayar?.nominal ?? 0)}
                       </span>
                       <span className="ml-2 text-[10px] text-on-surface-variant bg-surface-container px-1.5 py-0.5 rounded">
@@ -231,8 +242,8 @@ export default function AdminDashboardClient({
         </div>
 
         {/* Belum Bayar */}
-        <div className="rounded-3xl bg-surface border border-outline-variant p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-4 border-b border-outline-variant pb-3">
+        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5">
+          <div className="flex items-center justify-between mb-4 border-b border-outline-variant/60 pb-3">
             <div className="flex items-center gap-2">
               <XCircle className="h-4 w-4 text-status-danger" />
               <h2 className="font-bold text-on-surface text-sm">Belum Bayar — {labelBulanIni}</h2>
@@ -251,10 +262,10 @@ export default function AdminDashboardClient({
               belumBayar.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-center justify-between rounded-xl px-3 py-2 bg-surface-container-low text-xs transition-colors hover:bg-surface-container"
+                  className="flex items-center justify-between rounded-lg px-3 py-2 bg-surface-container-low text-xs transition-colors hover:bg-surface-container"
                 >
                   <span className="font-medium text-on-surface">{d.nama}</span>
-                  <span className="text-on-surface-variant text-[11px]">
+                  <span className="text-on-surface-variant font-mono tabular-nums text-[11px]">
                     Min. {formatRupiah(d.minimal_bulanan)}
                   </span>
                 </div>
@@ -272,21 +283,23 @@ function StatCard({
   label,
   value,
   sub,
+  accentClass = "border-t-emerald-500/50",
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
+  accentClass?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-surface border border-outline-variant p-4.5 shadow-xs">
-      <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-surface-container mb-2.5">
+    <div className={`rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-4 border-t-2 ${accentClass}`}>
+      <div className="mb-2.5 text-on-surface-variant">
         {icon}
       </div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
         {label}
       </p>
-      <p className="text-lg md:text-xl font-bold text-on-surface mt-0.5 leading-tight">{value}</p>
+      <p className="text-lg md:text-xl font-bold font-mono tabular-nums text-on-surface mt-0.5 leading-tight tracking-tight">{value}</p>
       {sub && <p className="text-[11px] text-on-surface-variant mt-1">{sub}</p>}
     </div>
   );
