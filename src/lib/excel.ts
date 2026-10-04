@@ -53,6 +53,9 @@ export function exportRekapToExcel(
   rekapData: Array<{
     no: number;
     bulan: string;
+    donasiQRIS?: number;
+    donasiRekening?: number;
+    donasiTunai?: number;
     jumlahDonasi: number;
     setorPihakKetiga: number;
     totalMasuk: number;
@@ -65,11 +68,14 @@ export function exportRekapToExcel(
   const data = rekapData.map((r) => ({
     No: r.no,
     Bulan: formatBulan(r.bulan),
-    "Jumlah Donasi": r.jumlahDonasi,
-    "Saldo Hutang Awal": totalHutang,
-    "Jumlah Setor Pihak Ketiga": r.setorPihakKetiga,
-    "Total Masuk": r.totalMasuk,
-    "Sisa Saldo Hutang": r.sisaHutang,
+    "Via QRIS (Rp)": r.donasiQRIS ?? 0,
+    "Via Rekening Masjid (Rp)": r.donasiRekening ?? 0,
+    "Via Tunai (Rp)": r.donasiTunai ?? 0,
+    "Jumlah Keseluruhan Donasi (Rp)": r.jumlahDonasi,
+    "Saldo Hutang Awal (Rp)": totalHutang,
+    "Jumlah Setor Pihak Ketiga (Rp)": r.setorPihakKetiga,
+    "Total Masuk (Rp)": r.totalMasuk,
+    "Sisa Saldo Hutang (Rp)": r.sisaHutang,
     Keterangan: r.keterangan ?? "",
   }));
 

@@ -7,7 +7,7 @@ import { exportRekapToExcel } from "@/lib/excel";
 import { cn } from "@/lib/utils";
 import {
   Copy, Check, ChevronLeft, ChevronRight, Pencil, Download,
-  X, FileSpreadsheet,
+  X, FileSpreadsheet, QrCode, CreditCard, Banknote, Wallet,
 } from "lucide-react";
 
 interface Pembayaran {
@@ -42,6 +42,30 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
   const pembayaranBulan = allPembayaran.filter((p) => p.bulan === bulanDB);
   const totalDonasiBulan = pembayaranBulan.reduce((s, p) => s + p.nominal, 0);
 
+  // Breakdown nilai donasi berdasarkan saluran pembayaran (Bulan Ini)
+  const donasiQRISBulan = pembayaranBulan
+    .filter((p) => /qris/i.test(p.metode))
+    .reduce((s, p) => s + p.nominal, 0);
+  const countQRISBulan = pembayaranBulan.filter((p) => /qris/i.test(p.metode)).length;
+
+  const donasiRekeningBulan = pembayaranBulan
+    .filter((p) => /transfer|rek|bank/i.test(p.metode))
+    .reduce((s, p) => s + p.nominal, 0);
+  const countRekeningBulan = pembayaranBulan.filter((p) => /transfer|rek|bank/i.test(p.metode)).length;
+
+  const donasiTunaiBulan = pembayaranBulan
+    .filter((p) => /tunai|cash/i.test(p.metode))
+    .reduce((s, p) => s + p.nominal, 0);
+  const countTunaiBulan = pembayaranBulan.filter((p) => /tunai|cash/i.test(p.metode)).length;
+
+  const donasiLainnyaBulan = pembayaranBulan
+    .filter((p) => !/qris|transfer|rek|bank|tunai|cash/i.test(p.metode))
+    .reduce((s, p) => s + p.nominal, 0);
+  const countLainnyaBulan = pembayaranBulan.filter((p) => !/qris|transfer|rek|bank|tunai|cash/i.test(p.metode)).length;
+
+  const totalKeseluruhanDonasiBulan =
+    donasiQRISBulan + donasiRekeningBulan + donasiTunaiBulan + donasiLainnyaBulan;
+
   // Setor pihak ketiga bulan ini
   const setorBulan = setorData.find((s) => s.bulan === bulanDB);
   const totalSetorBulan = setorBulan?.jumlah ?? 0;
@@ -54,13 +78,20 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
 
   let sisaHutang = totalHutang;
   const rekapBulan = bulanUnik.map((bln, idx) => {
-    const masuk = allPembayaran.filter((p) => p.bulan === bln).reduce((s, p) => s + p.nominal, 0);
+    const listBln = allPembayaran.filter((p) => p.bulan === bln);
+    const masuk = listBln.reduce((s, p) => s + p.nominal, 0);
+    const qris = listBln.filter((p) => /qris/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
+    const rekening = listBln.filter((p) => /transfer|rek|bank/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
+    const tunai = listBln.filter((p) => /tunai|cash/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
     const setor = setorData.find((s) => s.bulan === bln)?.jumlah ?? 0;
     const totalMasuk = masuk + setor;
     sisaHutang -= totalMasuk;
     return {
       bulan: bln,
       no: idx + 1,
+      donasiQRIS: qris,
+      donasiRekening: rekening,
+      donasiTunai: tunai,
       jumlahDonasi: masuk,
       setorPihakKetiga: setor,
       totalMasuk,
@@ -69,8 +100,12 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
     };
   });
 
-  // Progress overall
+  // Progress overall & akumulasi per saluran
   const totalTerkumpulAll = allPembayaran.reduce((s, p) => s + p.nominal, 0);
+  const totalQRISAll = allPembayaran.filter((p) => /qris/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
+  const totalRekeningAll = allPembayaran.filter((p) => /transfer|rek|bank/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
+  const totalTunaiAll = allPembayaran.filter((p) => /tunai|cash/i.test(p.metode)).reduce((s, p) => s + p.nominal, 0);
+
   const totalSetorAll = setorData.reduce((s, p) => s + p.jumlah, 0);
   const progressAll = Math.min(
     100,
@@ -89,6 +124,13 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
       ...pembayaranBulan.map(
         (p, i) => `${i + 1}. ${p.nama_donatur} — ${formatRupiah(p.nominal)} (${p.metode})`
       ),
+      ``,
+      `💳 *Jumlah Nilai Donasi (${labelBulan}):*`,
+      `• Via QRIS: *${formatRupiah(donasiQRISBulan)}*`,
+      `• Via Rekening Masjid: *${formatRupiah(donasiRekeningBulan)}*`,
+      `• Via Tunai: *${formatRupiah(donasiTunaiBulan)}*`,
+      donasiLainnyaBulan > 0 ? `• Via Lainnya: *${formatRupiah(donasiLainnyaBulan)}*` : null,
+      `= *Jumlah Keseluruhan: ${formatRupiah(totalKeseluruhanDonasiBulan)}*`,
       ``,
       `📊 *Rekapitulasi Keuangan:*`,
       `• Total Donasi Terkumpul Bulan Ini: *${formatRupiah(totalDonasiBulan)}*`,
@@ -222,6 +264,105 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
         <SummaryCard label="Total Masuk" value={formatRupiah(totalMasukBulan)} highlight />
       </div>
 
+      {/* Rincian Nilai Donasi Berdasarkan Saluran Pembayaran (QRIS, Rekening, Tunai) */}
+      <div className="rounded-2xl border border-outline/70 bg-surface p-5 md:p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-outline/50">
+          <div>
+            <h2 className="text-base md:text-lg font-semibold text-heading flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <span>Jumlah Nilai Donasi — Periode {labelBulan}</span>
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Rincian dana masuk per saluran pembayaran: QRIS, Rekening Masjid, dan Tunai
+            </p>
+          </div>
+          <div className="text-left sm:text-right bg-surface-container-low px-3.5 py-1.5 rounded-xl border border-outline/40">
+            <span className="text-[10px] uppercase font-semibold text-neutral-500 block">
+              = Jumlah Keseluruhan Donasi
+            </span>
+            <span className="font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {formatRupiah(totalKeseluruhanDonasiBulan)}
+            </span>
+          </div>
+        </div>
+
+        {/* 3 Grid Saluran: QRIS, Rekening Kas, Tunai */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          {/* 1. Via QRIS */}
+          <div className="rounded-xl border border-outline/60 bg-surface-container-low/40 p-4 transition-all hover:border-emerald-500/50">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-heading flex items-center gap-1.5">
+                <QrCode className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                Via QRIS
+              </span>
+              <span className="text-[11px] font-mono text-neutral-500 bg-surface px-2 py-0.5 rounded-md border border-outline/40">
+                {countQRISBulan} Donasi
+              </span>
+            </div>
+            <p className="font-mono text-xl md:text-2xl font-semibold text-heading mt-2 tabular-nums">
+              {formatRupiah(donasiQRISBulan)}
+            </p>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              {totalKeseluruhanDonasiBulan > 0
+                ? Math.round((donasiQRISBulan / totalKeseluruhanDonasiBulan) * 100)
+                : 0}
+              % dari total donasi bulan ini
+            </p>
+          </div>
+
+          {/* 2. Via Rekening Masjid */}
+          <div className="rounded-xl border border-outline/60 bg-surface-container-low/40 p-4 transition-all hover:border-emerald-500/50">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-heading flex items-center gap-1.5">
+                <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                Via Rekening Masjid
+              </span>
+              <span className="text-[11px] font-mono text-neutral-500 bg-surface px-2 py-0.5 rounded-md border border-outline/40">
+                {countRekeningBulan} Donasi
+              </span>
+            </div>
+            <p className="font-mono text-xl md:text-2xl font-semibold text-heading mt-2 tabular-nums">
+              {formatRupiah(donasiRekeningBulan)}
+            </p>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              {totalKeseluruhanDonasiBulan > 0
+                ? Math.round((donasiRekeningBulan / totalKeseluruhanDonasiBulan) * 100)
+                : 0}
+              % dari total donasi bulan ini
+            </p>
+          </div>
+
+          {/* 3. Via Tunai */}
+          <div className="rounded-xl border border-outline/60 bg-surface-container-low/40 p-4 transition-all hover:border-emerald-500/50">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-heading flex items-center gap-1.5">
+                <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                Via Tunai
+              </span>
+              <span className="text-[11px] font-mono text-neutral-500 bg-surface px-2 py-0.5 rounded-md border border-outline/40">
+                {countTunaiBulan} Donasi
+              </span>
+            </div>
+            <p className="font-mono text-xl md:text-2xl font-semibold text-heading mt-2 tabular-nums">
+              {formatRupiah(donasiTunaiBulan)}
+            </p>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              {totalKeseluruhanDonasiBulan > 0
+                ? Math.round((donasiTunaiBulan / totalKeseluruhanDonasiBulan) * 100)
+                : 0}
+              % dari total donasi bulan ini
+            </p>
+          </div>
+        </div>
+
+        {donasiLainnyaBulan > 0 && (
+          <div className="mt-3 pt-2 text-xs text-neutral-500 flex justify-between border-t border-outline/40">
+            <span>Metode Lainnya ({countLainnyaBulan} donasi):</span>
+            <span className="font-mono font-semibold">{formatRupiah(donasiLainnyaBulan)}</span>
+          </div>
+        )}
+      </div>
+
       {/* Share ke WA Box */}
       <div className="rounded-2xl border border-outline-variant bg-surface p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -256,7 +397,7 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
         </pre>
       </div>
 
-      {/* REKAP TABEL (Sesuai Template Excel Koordinator) */}
+      {/* REKAP TABEL (Sesuai Template Excel Koordinator + Rincian Saluran) */}
       <div className="rounded-2xl border border-outline-variant bg-surface overflow-hidden shadow-xs">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-outline-variant bg-surface-container-low">
           <div className="flex items-center gap-2">
@@ -273,19 +414,22 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
           <table className="w-full text-sm">
             <thead className="bg-surface-container-low border-b border-outline-variant">
               <tr>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">No</th>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Bulan</th>
-                <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Jumlah Donasi</th>
-                <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Setor Pihak Ketiga</th>
-                <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Total Masuk</th>
-                <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Sisa Hutang</th>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Keterangan</th>
+                <th className="text-left px-3 py-3 font-bold text-on-surface-variant">No</th>
+                <th className="text-left px-3 py-3 font-bold text-on-surface-variant">Bulan</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Via QRIS</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Via Rek. Masjid</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Via Tunai</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Jumlah Donasi</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Setor Pihak Ketiga</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Total Masuk</th>
+                <th className="text-right px-3 py-3 font-bold text-on-surface-variant">Sisa Hutang</th>
+                <th className="text-left px-3 py-3 font-bold text-on-surface-variant">Keterangan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
               {rekapBulan.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-on-surface-variant">
+                  <td colSpan={10} className="py-12 text-center text-on-surface-variant">
                     Belum ada data rekapitulasi bulanan
                   </td>
                 </tr>
@@ -298,42 +442,60 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
                       r.bulan === bulanDB && "bg-primary-container/20 font-medium"
                     )}
                   >
-                    <td className="px-4 py-3 text-on-surface-variant">{r.no}</td>
-                    <td className="px-4 py-3 font-semibold text-on-surface">{formatBulan(r.bulan)}</td>
-                    <td className="px-4 py-3 text-right text-on-surface">
+                    <td className="px-3 py-3 text-on-surface-variant">{r.no}</td>
+                    <td className="px-3 py-3 font-semibold text-on-surface whitespace-nowrap">{formatBulan(r.bulan)}</td>
+                    <td className="px-3 py-3 text-right font-mono text-xs text-neutral-600 dark:text-neutral-300">
+                      {r.donasiQRIS > 0 ? formatRupiah(r.donasiQRIS) : "-"}
+                    </td>
+                    <td className="px-3 py-3 text-right font-mono text-xs text-neutral-600 dark:text-neutral-300">
+                      {r.donasiRekening > 0 ? formatRupiah(r.donasiRekening) : "-"}
+                    </td>
+                    <td className="px-3 py-3 text-right font-mono text-xs text-neutral-600 dark:text-neutral-300">
+                      {r.donasiTunai > 0 ? formatRupiah(r.donasiTunai) : "-"}
+                    </td>
+                    <td className="px-3 py-3 text-right font-mono font-semibold text-on-surface">
                       {formatRupiah(r.jumlahDonasi)}
                     </td>
-                    <td className="px-4 py-3 text-right text-on-surface">
+                    <td className="px-3 py-3 text-right font-mono text-xs text-on-surface">
                       {r.setorPihakKetiga > 0 ? formatRupiah(r.setorPihakKetiga) : "-"}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-primary">
+                    <td className="px-3 py-3 text-right font-mono font-bold text-primary">
                       {formatRupiah(r.totalMasuk)}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-status-danger">
+                    <td className="px-3 py-3 text-right font-mono font-bold text-status-danger">
                       {formatRupiah(r.sisaHutang)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-on-surface-variant max-w-xs truncate">
+                    <td className="px-3 py-3 text-xs text-on-surface-variant max-w-xs truncate">
                       {r.keterangan ?? "-"}
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
-            <tfoot className="bg-surface-container-low border-t-2 border-outline-variant">
+            <tfoot className="bg-surface-container-low border-t-2 border-outline-variant font-mono">
               <tr>
-                <td colSpan={2} className="px-4 py-3.5 font-bold text-on-surface">
+                <td colSpan={2} className="px-3 py-3.5 font-bold font-sans text-on-surface">
                   TOTAL AKUMULASI
                 </td>
-                <td className="px-4 py-3.5 text-right font-black text-on-surface">
+                <td className="px-3 py-3.5 text-right font-semibold text-xs text-neutral-700 dark:text-neutral-200">
+                  {formatRupiah(totalQRISAll)}
+                </td>
+                <td className="px-3 py-3.5 text-right font-semibold text-xs text-neutral-700 dark:text-neutral-200">
+                  {formatRupiah(totalRekeningAll)}
+                </td>
+                <td className="px-3 py-3.5 text-right font-semibold text-xs text-neutral-700 dark:text-neutral-200">
+                  {formatRupiah(totalTunaiAll)}
+                </td>
+                <td className="px-3 py-3.5 text-right font-bold text-on-surface">
                   {formatRupiah(totalTerkumpulAll)}
                 </td>
-                <td className="px-4 py-3.5 text-right font-black text-on-surface">
+                <td className="px-3 py-3.5 text-right font-bold text-on-surface">
                   {formatRupiah(totalSetorAll)}
                 </td>
-                <td className="px-4 py-3.5 text-right font-black text-primary">
+                <td className="px-3 py-3.5 text-right font-bold text-primary">
                   {formatRupiah(totalTerkumpulAll + totalSetorAll)}
                 </td>
-                <td className="px-4 py-3.5 text-right font-black text-status-danger">
+                <td className="px-3 py-3.5 text-right font-bold text-status-danger">
                   {formatRupiah(Math.max(0, totalHutang - totalTerkumpulAll - totalSetorAll))}
                 </td>
                 <td />
