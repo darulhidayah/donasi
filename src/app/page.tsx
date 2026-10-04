@@ -123,12 +123,12 @@ export default async function PublicHomePage() {
             <span>Program Donasi Pelunasan Hutang</span>
           </div>
 
-          <h1 className="text-2xl md:text-4xl font-bold leading-[1.2] tracking-tight mb-2 text-on-surface">
+          <h1 className="text-2xl md:text-3xl font-semibold leading-[1.25] tracking-tight mb-2 text-on-surface">
             Pelunasan Hutang Pembangunan Masjid
           </h1>
           <p className="text-sm md:text-[15px] text-on-surface-variant max-w-2xl leading-relaxed">
             Bersama-sama membebaskan kewajiban hutang pembangunan rumah Allah di Titik Nol Tanah Merah.
-            Donasi rutin minimal <strong className="text-on-surface font-semibold">Rp 50.000/bulan</strong>, tanpa batasan
+            Donasi rutin minimal <strong className="text-on-surface font-medium">Rp 50.000/bulan</strong>, tanpa batasan
             maksimal.
           </p>
 
@@ -139,7 +139,7 @@ export default async function PublicHomePage() {
                 <p className="text-[11px] text-on-surface-variant font-medium uppercase tracking-wider">
                   Total Donasi Terkumpul
                 </p>
-                <p className="font-mono text-2xl md:text-3xl font-bold text-status-success mt-1 tabular-nums tracking-tight">
+                <p className="font-mono text-2xl md:text-3xl font-semibold text-status-success mt-1 tabular-nums tracking-tight">
                   {formatRupiah(totalTerkumpul)}
                 </p>
               </div>
@@ -147,25 +147,25 @@ export default async function PublicHomePage() {
                 <p className="text-[11px] text-on-surface-variant font-medium uppercase tracking-wider">
                   Target Pelunasan Pembangunan
                 </p>
-                <p className="font-mono text-base md:text-lg font-semibold text-on-surface mt-1 tabular-nums tracking-tight">
+                <p className="font-mono text-base md:text-lg font-medium text-on-surface mt-1 tabular-nums tracking-tight">
                   {formatRupiah(totalHutang)}
                 </p>
               </div>
             </div>
 
             {/* Glowing Vercel Progress Bar */}
-            <div className="w-full bg-surface-container-high rounded-full h-2.5 overflow-hidden mt-3.5 relative">
+            <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden mt-3.5 relative">
               <div
-                className="bg-emerald-500 h-full rounded-full transition-all duration-1000 shadow-sm"
+                className="bg-emerald-500 h-full rounded-full transition-all duration-1000 shadow-xs"
                 style={{ width: `${progress}%` }}
               />
             </div>
 
             <div className="flex justify-between items-center mt-2.5 text-xs">
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full text-[11px]">
+              <span className="font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-[11px]">
                 {progress}% Terpenuhi
               </span>
-              <span className="text-status-danger font-mono font-semibold tabular-nums text-xs">
+              <span className="text-status-danger font-mono font-medium tabular-nums text-xs">
                 Sisa Kewajiban: {formatRupiah(sisaHutang)}
               </span>
             </div>
@@ -176,21 +176,21 @@ export default async function PublicHomePage() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           <div className="rounded-xl border border-outline/70 bg-surface p-4 text-center transition-all hover:border-outline">
             <p className="text-xs text-on-surface-variant font-medium">Donatur Tetap Terdaftar</p>
-            <p className="font-mono text-2xl md:text-3xl font-bold text-on-surface mt-1.5 tabular-nums tracking-tight">
+            <p className="font-mono text-2xl md:text-3xl font-semibold text-on-surface mt-1.5 tabular-nums tracking-tight">
               {totalDonatur}
             </p>
             <p className="text-[11px] text-on-surface-variant mt-0.5">Orang di Grup WA</p>
           </div>
           <div className="rounded-xl border border-outline/70 bg-surface p-4 text-center transition-all hover:border-outline">
             <p className="text-xs text-on-surface-variant font-medium">Minimal Donasi</p>
-            <p className="font-mono text-2xl md:text-3xl font-bold text-primary mt-1.5 tabular-nums tracking-tight">
+            <p className="font-mono text-2xl md:text-3xl font-semibold text-primary mt-1.5 tabular-nums tracking-tight">
               50 Ribu
             </p>
             <p className="text-[11px] text-on-surface-variant mt-0.5">/ bulan (bebas tanpa batas)</p>
           </div>
           <div className="col-span-2 md:col-span-1 rounded-xl border border-outline/70 bg-surface p-4 text-center transition-all hover:border-outline">
             <p className="text-xs text-on-surface-variant font-medium">Periode Berjalan</p>
-            <p className="font-mono text-lg md:text-xl font-bold text-on-surface mt-2 truncate tracking-tight">
+            <p className="font-mono text-lg md:text-xl font-semibold text-on-surface mt-2 truncate tracking-tight">
               {labelBulan}
             </p>
             <p className="text-[11px] text-on-surface-variant mt-0.5">Update Real-Time</p>
@@ -207,7 +207,7 @@ export default async function PublicHomePage() {
         <div className="rounded-2xl border border-outline/70 bg-surface p-6 md:p-8 shadow-[0_1px_3px_rgba(0,0,0,0.02)] relative overflow-hidden">
           <div className="flex items-center gap-2 mb-1">
             <CreditCard className="h-5 w-5 text-primary" />
-            <h2 className="text-lg md:text-xl font-bold text-on-surface tracking-tight">
+            <h2 className="text-lg md:text-xl font-semibold text-on-surface tracking-tight">
               Saluran Pembayaran Donasi
             </h2>
           </div>
@@ -220,12 +220,12 @@ export default async function PublicHomePage() {
             {/* Rekening Bank */}
             <div className="flex flex-col justify-between space-y-4">
               <div className="rounded-xl bg-surface-container-low/70 border border-outline/60 p-5">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider bg-primary-container px-2 py-0.5 rounded-md">
+                <span className="text-[10px] font-semibold text-primary uppercase tracking-wider bg-primary-container px-2 py-0.5 rounded-md">
                   Transfer Bank Kas
                 </span>
                 <p className="text-xs text-on-surface-variant mt-3 font-medium">Nomor Rekening Kas:</p>
                 <div className="flex items-center justify-between mt-1">
-                  <p className="font-mono text-xl md:text-2xl font-bold text-on-surface tracking-wider tabular-nums">
+                  <p className="font-mono text-xl md:text-2xl font-semibold text-on-surface tracking-wider tabular-nums">
                     {configMap.rekening_bank ?? "2156-0100-0796-535"}
                   </p>
                 </div>

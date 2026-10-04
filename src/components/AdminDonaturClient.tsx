@@ -3,7 +3,13 @@
 import { useState, useTransition, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah, formatTanggal } from "@/lib/utils";
-import { exportDonaturToExcel, downloadTemplateDonaturExcel, readExcelFile } from "@/lib/excel";
+import {
+  exportDonaturToExcel,
+  downloadTemplateDonaturExcel,
+  readExcelFile,
+  getExcelValue,
+  cleanPhoneNumber,
+} from "@/lib/excel";
 import { cn } from "@/lib/utils";
 import {
   Plus, Pencil, UserX, UserCheck, Search, X, FileSpreadsheet,
@@ -172,23 +178,61 @@ export default function AdminDonaturClient({
 
       const payload = rows
         .map((r) => {
-          const nama = r["Nama Donatur"] || r["nama"] || r["Nama"] || r["NAMA"];
+          const nama = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur", "Nama Lengkap");
           if (!nama) return null;
-          const noHp = String(r["Nomor HP"] || r["No. HP"] || r["no_hp"] || r["WA"] || "").trim();
-          const minNominal = parseInt(r["Minimal Donasi"] || r["Nominal"] || r["minimal_bulanan"] || "50000") || 50000;
-          let metode = String(r["Metode Pembayaran"] || r["Metode"] || "Transfer").trim();
-          if (!["Transfer", "QRIS", "Tunai", "Lainnya"].includes(metode)) {
-            metode = "Transfer";
-          }
-          const catatan = r["Catatan"] || r["Keterangan"] || null;
+
+          const rawNoHp = getExcelValue(
+            r,
+            "Nomor HP / WA",
+            "Nomor HP/WA",
+            "No. HP / WA",
+            "No HP / WA",
+            "Nomor HP",
+            "No. HP",
+            "No HP",
+            "HP",
+            "WA",
+            "WhatsApp",
+            "No WA",
+            "No. WA",
+            "Telepon",
+            "No Telp",
+            "Kontak",
+            "no_hp",
+            "nohp"
+          );
+          const noHp = cleanPhoneNumber(rawNoHp);
+
+          const rawNominal = getExcelValue(
+            r,
+            "Minimal Donasi (Rp)",
+            "Minimal Donasi",
+            "Nilai Donasi",
+            "Nominal",
+            "Donasi",
+            "minimal_bulanan"
+          );
+          const minNominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || 50000;
+
+          let rawMetode = getExcelValue(r, "Metode Pembayaran", "Metode", "Cara Bayar", "metode_default");
+          let metode: Donatur["metode_default"] = "Transfer";
+          if (rawMetode.toLowerCase().includes("qris")) metode = "QRIS";
+          else if (rawMetode.toLowerCase().includes("tunai") || rawMetode.toLowerCase().includes("cash")) metode = "Tunai";
+          else if (rawMetode.toLowerCase().includes("transfer") || rawMetode.toLowerCase().includes("bank")) metode = "Transfer";
+          else if (rawMetode) metode = "Lainnya";
+
+          const catatan = getExcelValue(r, "Catatan", "Keterangan", "Ket", "Note");
+
+          const rawStatus = getExcelValue(r, "Status", "Status Donatur");
+          const status = rawStatus.toLowerCase().includes("nonaktif") ? "nonaktif" : "aktif";
 
           return {
-            nama: String(nama).trim(),
-            no_hp: noHp || null,
+            nama: nama.trim(),
+            no_hp: noHp,
             minimal_bulanan: Math.max(50000, minNominal),
-            metode_default: metode as Donatur["metode_default"],
-            catatan: catatan ? String(catatan).trim() : null,
-            status: "aktif" as const,
+            metode_default: metode,
+            catatan: catatan ? catatan.trim() : null,
+            status: status as Donatur["status"],
             created_by_name: `${adminNama} (Import Excel)`,
           };
         })

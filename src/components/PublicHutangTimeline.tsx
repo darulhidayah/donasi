@@ -65,7 +65,7 @@ export default function PublicHutangTimeline({
               <Building2 className="h-3.5 w-3.5" />
               <span>Transparansi Hutang Pembangunan</span>
             </div>
-            <h2 className="text-xl md:text-2xl font-bold text-on-surface tracking-tight">
+            <h2 className="text-lg md:text-xl font-semibold text-on-surface tracking-tight">
               Rincian Pihak Ketiga & Realisasi Pelunasan
             </h2>
             <p className="text-xs md:text-sm text-on-surface-variant mt-1 max-w-xl">
@@ -74,12 +74,12 @@ export default function PublicHutangTimeline({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-surface-container-low/70 border border-outline/60 rounded-xl p-4 shrink-0">
+          <div className="flex items-center gap-3 bg-surface-container-low/70 border border-outline/60 rounded-xl p-3.5 shrink-0">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">
                 Total Terlunasi
               </p>
-              <p className="font-mono text-xl font-bold text-status-success tabular-nums mt-0.5 tracking-tight">
+              <p className="font-mono text-lg md:text-xl font-semibold text-status-success tabular-nums mt-0.5 tracking-tight">
                 {formatRupiah(totalTerbayar)}
               </p>
               <p className="text-[11px] text-on-surface-variant mt-0.5">

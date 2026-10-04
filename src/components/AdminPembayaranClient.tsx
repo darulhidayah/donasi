@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah, formatTanggal, NAMA_BULAN, toBulanDB } from "@/lib/utils";
-import { exportPembayaranToExcel, readExcelFile } from "@/lib/excel";
+import { exportPembayaranToExcel, readExcelFile, getExcelValue, cleanPhoneNumber } from "@/lib/excel";
 import { cn } from "@/lib/utils";
 import {
   Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight,
@@ -192,21 +192,41 @@ export default function AdminPembayaranClient({
       const { data: userData } = await supabase.auth.getUser();
 
       for (const r of rows) {
-        const nama = String(r["Nama Donatur"] || r["nama"] || r["Nama"] || "").trim();
+        const nama = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur", "Nama Lengkap");
         if (!nama) continue;
 
         let donatur = donaturList.find(
-          (d) => d.nama.toLowerCase().trim() === nama.toLowerCase()
+          (d) => d.nama.toLowerCase().trim() === nama.toLowerCase().trim()
         );
 
         let donaturId = donatur?.id;
-        let noHp = String(r["No. HP"] || r["Nomor HP"] || donatur?.no_hp || "").trim();
+        const rawNoHp = getExcelValue(
+          r,
+          "Nomor HP / WA",
+          "Nomor HP/WA",
+          "No. HP / WA",
+          "No HP / WA",
+          "No. HP",
+          "Nomor HP",
+          "No HP",
+          "HP",
+          "WA",
+          "WhatsApp",
+          "No WA",
+          "No. WA",
+          "Telepon",
+          "No Telp",
+          "Kontak",
+          "no_hp",
+          "nohp"
+        );
+        const noHp = cleanPhoneNumber(rawNoHp) || donatur?.no_hp;
 
         if (!donaturId) {
           const { data: newD } = await supabase
             .from("donatur")
             .insert({
-              nama,
+              nama: nama.trim(),
               no_hp: noHp || null,
               minimal_bulanan: 50000,
               metode_default: "Transfer",
@@ -220,25 +240,48 @@ export default function AdminPembayaranClient({
 
         if (!donaturId) continue;
 
-        const nominal = parseInt(r["Nilai Donasi"] || r["Nominal"] || "50000") || 50000;
-        let metode = String(r["Keterangan Donasi"] || r["Metode"] || "Transfer").trim();
+        const rawNominal = getExcelValue(
+          r,
+          "Nilai Donasi (Rp)",
+          "Nilai Donasi",
+          "Nominal",
+          "Minimal Donasi",
+          "Jumlah",
+          "Donasi"
+        );
+        const nominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || 50000;
+
+        let rawMetode = getExcelValue(
+          r,
+          "Metode Pembayaran",
+          "Keterangan Donasi",
+          "Metode",
+          "Cara Bayar"
+        );
+        let metode: Pembayaran["metode"] = "Transfer";
         let ket = "";
-        if (metode.includes("-")) {
-          const parts = metode.split("-");
-          metode = parts[0].trim();
+
+        if (rawMetode.includes("-")) {
+          const parts = rawMetode.split("-");
+          rawMetode = parts[0].trim();
           ket = parts.slice(1).join("-").trim();
         }
-        if (!["Transfer", "QRIS", "Tunai", "Lainnya"].includes(metode)) {
-          metode = "Transfer";
-        }
+
+        if (rawMetode.toLowerCase().includes("qris")) metode = "QRIS";
+        else if (rawMetode.toLowerCase().includes("tunai") || rawMetode.toLowerCase().includes("cash")) metode = "Tunai";
+        else if (rawMetode.toLowerCase().includes("transfer") || rawMetode.toLowerCase().includes("bank")) metode = "Transfer";
+        else if (rawMetode) metode = "Lainnya";
+
+        const directKet = getExcelValue(r, "Keterangan", "Catatan", "Note");
+        if (directKet) ket = directKet;
 
         payload.push({
           donatur_id: donaturId,
-          nama_donatur: nama,
+          nama_donatur: nama.trim(),
           no_hp_donatur: noHp || null,
           bulan: bulanDB,
           nominal: Math.max(50000, nominal),
-          metode: metode as Pembayaran["metode"],
+          metode,
           keterangan: ket || null,
           tgl_bayar: new Date().toISOString().split("T")[0],
           dicatat_oleh: userData.user?.id,

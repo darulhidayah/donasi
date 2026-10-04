@@ -4,24 +4,24 @@
 
 /* ============ VERCEL GEIST DESIGN SYSTEM 2026 (REFINED) ============ */
 
-/* LIGHT THEME: Clean Crisp Canvas, Soft Hairline Borders, Refined Typography */
+/* LIGHT THEME: Soft Minimalist Canvas, Gentle Non-Black Borders, Relaxed Typography */
 :root,
 .light {
-  --c-background: 255 255 255;
-  --c-on-background: 23 23 23;
+  --c-background: 250 250 252;
+  --c-on-background: 39 39 42;
 
   --c-surface: 255 255 255;
-  --c-on-surface: 23 23 23;
-  --c-surface-variant: 250 250 250;
-  --c-on-surface-variant: 115 115 115;
+  --c-on-surface: 39 39 42;
+  --c-surface-variant: 244 244 246;
+  --c-on-surface-variant: 113 113 122;
 
   --c-surface-container-lowest: 255 255 255;
-  --c-surface-container-low: 250 250 250;
-  --c-surface-container: 245 245 247;
-  --c-surface-container-high: 228 228 231;
+  --c-surface-container-low: 248 249 251;
+  --c-surface-container: 243 244 247;
+  --c-surface-container-high: 228 229 233;
 
-  --c-outline: 228 228 231;
-  --c-outline-variant: 241 241 243;
+  --c-outline: 232 232 236;
+  --c-outline-variant: 243 243 246;
 
   --c-primary: 5 150 105;
   --c-on-primary: 255 255 255;
@@ -30,10 +30,10 @@
   --c-primary-dark: 4 120 87;
   --c-primary-light: 16 185 129;
 
-  --c-secondary: 115 115 115;
+  --c-secondary: 113 113 122;
   --c-on-secondary: 255 255 255;
-  --c-secondary-container: 245 245 245;
-  --c-on-secondary-container: 23 23 23;
+  --c-secondary-container: 244 244 246;
+  --c-on-secondary-container: 39 39 42;
 
   --c-error: 225 29 72;
   --c-on-error: 255 255 255;
@@ -161,8 +161,8 @@ body {
   background-color: rgba(255, 255, 255, 0.88) !important;
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
 }
 
 .dark .site-header {
