@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah, formatTanggal, formatBulan } from "@/lib/utils";
 import {
@@ -15,7 +15,7 @@ import {
   Plus, Pencil, UserX, UserCheck, Search, X, FileSpreadsheet,
   Upload, Download, AlertCircle, CheckCircle2, User, CreditCard,
   QrCode, Banknote, ShieldAlert, Eye, Calendar, ExternalLink,
-  History, Clock, Check
+  History, Clock, Check, MoreVertical, Trash2
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 
@@ -50,9 +50,11 @@ const METODE_OPTIONS = ["Transfer", "QRIS", "Tunai", "Lainnya"] as const;
 
 export default function AdminDonaturClient({
   initialList,
+  paidDonaturIds = [],
   adminNama,
 }: {
   initialList: Donatur[];
+  paidDonaturIds?: number[];
   adminNama: string;
 }) {
   const [list, setList] = useState<Donatur[]>(initialList);
@@ -61,6 +63,8 @@ export default function AdminDonaturClient({
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editing, setEditing] = useState<Donatur | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Donatur | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   
   // State Modal Detail Riwayat Pelunasan Donatur
   const [detailDonatur, setDetailDonatur] = useState<Donatur | null>(null);
@@ -71,6 +75,27 @@ export default function AdminDonaturClient({
   const [error, setError] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Close active dropdown menu on outside click or escape
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-menu-container]")) {
+        setActiveMenuId(null);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveMenuId(null);
+      }
+    };
+    window.addEventListener("click", handleOutsideClick);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("click", handleOutsideClick);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const openDetail = async (d: Donatur) => {
     setDetailDonatur(d);
@@ -201,6 +226,41 @@ export default function AdminDonaturClient({
           x.id === d.id ? { ...x, status: newStatus, updated_by_name: adminNama } : x
         )
       );
+    });
+  };
+
+  const handleDeleteDonatur = () => {
+    if (!deleteConfirm) return;
+    const donaturId = deleteConfirm.id;
+
+    startTransition(async () => {
+      // 1. Cek validasi di tabel pembayaran apakah sudah ada donasi
+      const { count } = await supabase
+        .from("pembayaran")
+        .select("id", { count: "exact", head: true })
+        .eq("donatur_id", donaturId);
+
+      if (count && count > 0) {
+        setError(`Donatur "${deleteConfirm.nama}" tidak dapat dihapus karena sudah memiliki ${count} riwayat pembayaran donasi.`);
+        setDeleteConfirm(null);
+        return;
+      }
+
+      // 2. Hapus donatur
+      const { error: err } = await supabase
+        .from("donatur")
+        .delete()
+        .eq("id", donaturId);
+
+      if (err) {
+        setError("Gagal menghapus donatur: " + err.message);
+        setDeleteConfirm(null);
+        return;
+      }
+
+      setList((prev) => prev.filter((d) => d.id !== donaturId));
+      setDeleteConfirm(null);
+      setError(null);
     });
   };
 
@@ -515,21 +575,83 @@ export default function AdminDonaturClient({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Tombol Detail (Bisa Diakses Langsung) */}
                         <button
                           onClick={() => openDetail(d)}
-                          className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors shadow-2xs"
+                          className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors shadow-2xs cursor-pointer"
                           title="Lihat Rincian Riwayat Pelunasan Bulanan"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           <span>Detail</span>
                         </button>
-                        <button
-                          onClick={() => openEdit(d)}
-                          className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
-                          title="Edit Data"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
+
+                        {/* Menu Titik Tiga (Opsi: Edit & Hapus) */}
+                        <div className="relative inline-block text-left" data-menu-container>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(activeMenuId === d.id ? null : d.id);
+                            }}
+                            className={cn(
+                              "rounded-lg p-1.5 transition-colors cursor-pointer",
+                              activeMenuId === d.id
+                                ? "bg-surface-container text-on-surface ring-1 ring-outline-variant"
+                                : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+                            )}
+                            title="Opsi Lainnya"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
+
+                          {activeMenuId === d.id && (
+                            <div
+                              className={cn(
+                                "absolute right-0 w-44 rounded-xl border border-outline-variant bg-surface p-1 shadow-xl z-30 text-left animate-in fade-in zoom-in-95 duration-100",
+                                i >= filtered.length - 2 && filtered.length > 2
+                                  ? "bottom-full mb-1"
+                                  : "top-full mt-1"
+                              )}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {/* Edit Data */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  openEdit(d);
+                                }}
+                                className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container transition-colors text-left cursor-pointer"
+                              >
+                                <Pencil className="h-3.5 w-3.5 text-on-surface-variant" />
+                                <span>Edit Data</span>
+                              </button>
+
+                              {/* Hapus Donatur */}
+                              {paidDonaturIds.includes(d.id) ? (
+                                <div
+                                  className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-on-surface-variant/40 cursor-not-allowed text-left select-none"
+                                  title="Donatur sudah memiliki riwayat pembayaran donasi sehingga tidak dapat dihapus. Anda dapat menonaktifkannya melalui tombol status."
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <span>Hapus (Terkunci)</span>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    setDeleteConfirm(d);
+                                  }}
+                                  className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors text-left cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <span>Hapus Donatur</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -1054,6 +1176,62 @@ export default function AdminDonaturClient({
                 );
               })()
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KONFIRMASI HAPUS DONATUR */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/60 dark:bg-black/80 transition-opacity"
+            onClick={() => !isPending && setDeleteConfirm(null)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl modal-panel p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400 mb-3">
+              <div className="h-10 w-10 rounded-full bg-rose-500/15 flex items-center justify-center shrink-0">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-on-surface">Hapus Donatur?</h3>
+                <p className="text-xs text-on-surface-variant">Tindakan tidak dapat dibatalkan</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-on-surface-variant mb-4 leading-relaxed">
+              Apakah Anda yakin ingin menghapus data donatur{" "}
+              <strong className="text-on-surface">{deleteConfirm.nama}</strong>?
+              Donatur ini belum pernah tercatat menyetor donasi sehingga dapat dihapus dengan aman.
+            </p>
+
+            <div className="flex gap-2.5 pt-2 border-t border-outline-variant">
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 rounded-xl border border-outline-variant bg-surface py-2 text-xs font-semibold text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={handleDeleteDonatur}
+                className="flex-1 rounded-xl bg-rose-600 text-white py-2 text-xs font-semibold hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {isPending ? (
+                  <>
+                    <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Ya, Hapus</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

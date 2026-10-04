@@ -9,11 +9,24 @@ export default async function AdminDonaturPage() {
   const { adminUser } = await guardAdminPage();
   const supabase = await createServerSupabase();
 
-  const { data } = await supabase
-    .from("donatur")
-    .select("*")
-    .order("status", { ascending: false })
-    .order("nama");
+  const [{ data: donaturData }, { data: pembayaranData }] = await Promise.all([
+    supabase
+      .from("donatur")
+      .select("*")
+      .order("status", { ascending: false })
+      .order("nama"),
+    supabase
+      .from("pembayaran")
+      .select("donatur_id"),
+  ]);
 
-  return <AdminDonaturClient initialList={(data ?? []) as Donatur[]} adminNama={adminUser.nama} />;
+  const paidDonaturIds = Array.from(new Set((pembayaranData ?? []).map((p) => p.donatur_id)));
+
+  return (
+    <AdminDonaturClient
+      initialList={(donaturData ?? []) as Donatur[]}
+      paidDonaturIds={paidDonaturIds}
+      adminNama={adminUser.nama}
+    />
+  );
 }
