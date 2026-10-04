@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatRupiah, hitungProgress, NAMA_BULAN } from "@/lib/utils";
+import { formatRupiah, hitungProgress, formatPersen, NAMA_BULAN } from "@/lib/utils";
 import {
   CheckCircle2, XCircle, Users, Banknote, Building2,
   ArrowRight, ShieldCheck,
@@ -44,8 +44,9 @@ export default function AdminDashboardClient({
   config,
   sumberHutangList,
 }: Props) {
-  const totalSemuaPenerimaan = totalTerkumpul + totalSetor;
-  const progress = hitungProgress(totalSemuaPenerimaan, totalHutang);
+  // Progres pelunasan hutang: dihitung dari total donasi terkumpul terhadap total hutang
+  const progress = hitungProgress(totalTerkumpul, totalHutang);
+  const progressStr = formatPersen(totalTerkumpul, totalHutang);
   const sudahBayar = donaturAktif.filter((d) => sudahBayarIds.has(d.id));
   const belumBayar = donaturAktif.filter((d) => !sudahBayarIds.has(d.id));
 
@@ -95,18 +96,20 @@ export default function AdminDashboardClient({
 
         <div className="flex justify-between items-center mt-2.5 text-xs">
           <span className="text-on-surface-variant font-medium">
-            Terkumpul:{" "}
-            <strong className="font-mono tabular-nums text-on-surface">{formatRupiah(totalSemuaPenerimaan)}</strong>
+            Total Donasi Dihimpun:{" "}
+            <strong className="font-mono tabular-nums text-on-surface">{formatRupiah(totalTerkumpul)}</strong>
           </span>
           <span className="font-bold text-primary bg-primary-container px-2.5 py-0.5 rounded-full text-[11px]">
-            {progress}% Tercapai
+            {progressStr} Tercapai
           </span>
         </div>
 
         {totalSetor > 0 && (
           <p className="mt-2 text-[11px] text-on-surface-variant">
-            Rincian: Donatur Tetap {formatRupiah(totalTerkumpul)} + Setoran Pihak Ketiga{" "}
-            {formatRupiah(totalSetor)}
+            Realisasi Penyaluran: <strong className="font-mono text-status-success font-semibold">{formatRupiah(totalSetor)}</strong> telah disetorkan ke toko kreditor
+            {totalTerkumpul > totalSetor && (
+              <span> • Sisa Saldo Kas: <strong className="font-mono text-primary font-semibold">{formatRupiah(totalTerkumpul - totalSetor)}</strong></span>
+            )}
           </p>
         )}
       </div>
