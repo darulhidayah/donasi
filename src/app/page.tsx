@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabase, createAdminClient } from "@/lib/supabase";
 import { formatRupiah, hitungProgress, formatPersen, NAMA_BULAN, cn } from "@/lib/utils";
 import ThemeToggle from "@/components/ThemeToggle";
 import PublicHutangTimeline from "@/components/PublicHutangTimeline";
@@ -13,7 +13,6 @@ import type { Database } from "@/lib/database.types";
 
 type Konfigurasi = Database["public"]["Tables"]["konfigurasi"]["Row"];
 type Pembayaran = Database["public"]["Tables"]["pembayaran"]["Row"];
-type Setor = Database["public"]["Tables"]["setor_pihak_ketiga"]["Row"];
 type Donatur = Database["public"]["Tables"]["donatur"]["Row"];
 type SumberHutang = Database["public"]["Tables"]["sumber_hutang"]["Row"];
 type PembayaranHutang = Database["public"]["Tables"]["pembayaran_hutang"]["Row"];
@@ -32,47 +31,86 @@ export default async function PublicHomePage({
 
   const supabase = await createServerSupabase();
 
+  // 1. Ambil data ringkasan dan detail langsung dari VIEW Supabase (jika sudah ada)
   const [
+    { data: viewRingkasan },
+    { data: viewSumberHutang },
     { data: configRaw },
-    { data: semuaPembayaranRaw },
-    { data: setorPihakKetigaRaw },
-    { data: donaturRaw },
-    { data: sumberHutangRaw },
     { data: riwayatHutangRaw },
   ] = await Promise.all([
+    supabase.from("view_ringkasan_donasi").select("*").maybeSingle(),
+    supabase.from("view_sumber_hutang_detail").select("*"),
     supabase.from("konfigurasi").select("kunci, nilai"),
-    supabase.from("pembayaran").select("nominal"),
-    supabase.from("setor_pihak_ketiga").select("jumlah"),
-    supabase.from("donatur").select("id").eq("status", "aktif"),
-    supabase.from("sumber_hutang").select("*").order("nominal", { ascending: false }),
     supabase.from("pembayaran_hutang").select("*").order("tanggal_bayar", { ascending: false }),
   ]);
 
-  const config = (configRaw ?? []) as Pick<Konfigurasi, "kunci" | "nilai">[];
+  let totalHutang = viewRingkasan?.total_hutang ?? 0;
+  let totalTerkumpul = viewRingkasan?.total_donasi_terkumpul ?? 0;
+  let sisaHutang = viewRingkasan?.sisa_hutang ?? 0;
+  let totalDonatur = viewRingkasan?.total_donatur_aktif ?? 0;
+  let progress = viewRingkasan?.persentase_tercapai ?? 0;
+  let progressStr = formatPersen(totalTerkumpul, totalHutang);
+  let sumberHutang = (viewSumberHutang ?? []) as SumberHutang[];
+  let riwayatHutang = (riwayatHutangRaw ?? []) as PembayaranHutang[];
+
   const configMap: Record<string, string> = {};
-  config.forEach((c) => {
+  (configRaw ?? []).forEach((c) => {
     configMap[c.kunci] = c.nilai;
   });
 
-  const riwayatHutang = (riwayatHutangRaw ?? []) as PembayaranHutang[];
+  // Fallback server-side: jika VIEW belum dieksekusi di Supabase atau konfigurasi kosong karena RLS anon,
+  // ambil data server-side via createAdminClient() agar pengunjung tamu selalu melihat angka real-time yang akurat
+  if (!viewRingkasan || !configRaw || configRaw.length === 0 || sumberHutang.length === 0) {
+    try {
+      const adminSb = createAdminClient();
+      const [
+        { data: adminConfig },
+        { data: adminPembayaran },
+        { data: adminDonatur },
+        { data: adminSumberHutang },
+        { data: adminRiwayatHutang },
+      ] = await Promise.all([
+        configRaw && configRaw.length > 0 ? Promise.resolve({ data: null }) : adminSb.from("konfigurasi").select("kunci, nilai"),
+        !viewRingkasan ? adminSb.from("pembayaran").select("nominal") : Promise.resolve({ data: null }),
+        !viewRingkasan ? adminSb.from("donatur").select("id").eq("status", "aktif") : Promise.resolve({ data: null }),
+        sumberHutang.length === 0 ? adminSb.from("sumber_hutang").select("*").order("nominal", { ascending: false }) : Promise.resolve({ data: null }),
+        riwayatHutang.length === 0 ? adminSb.from("pembayaran_hutang").select("*").order("tanggal_bayar", { ascending: false }) : Promise.resolve({ data: null }),
+      ]);
 
-  // Sinkronkan nilai terbayar pada setiap sumber hutang secara dinamis dengan riwayat transaksi pembayaran
-  const sumberHutang = ((sumberHutangRaw ?? []) as SumberHutang[]).map((h) => {
-    const totalBayarToko = riwayatHutang
-      .filter((p) => p.sumber_hutang_id === h.id)
-      .reduce((sum, p) => sum + (p.nominal || 0), 0);
-    const terbayarFinal = Math.max(h.terbayar || 0, totalBayarToko);
-    let status = h.status;
-    if (terbayarFinal >= h.nominal && h.nominal > 0) status = "lunas";
-    else if (terbayarFinal > 0) status = "sebagian";
-    return { ...h, terbayar: terbayarFinal, status };
-  });
+      if (adminConfig) {
+        adminConfig.forEach((c) => { configMap[c.kunci] = c.nilai; });
+      }
+      if (adminRiwayatHutang) {
+        riwayatHutang = adminRiwayatHutang as PembayaranHutang[];
+      }
+      if (adminSumberHutang) {
+        sumberHutang = (adminSumberHutang as SumberHutang[]).map((h) => {
+          const totalBayarToko = riwayatHutang
+            .filter((p) => p.sumber_hutang_id === h.id)
+            .reduce((sum, p) => sum + (p.nominal || 0), 0);
+          const terbayarFinal = Math.max(h.terbayar || 0, totalBayarToko);
+          let status = h.status;
+          if (terbayarFinal >= h.nominal && h.nominal > 0) status = "lunas";
+          else if (terbayarFinal > 0) status = "sebagian";
+          return { ...h, terbayar: terbayarFinal, status };
+        });
+      }
 
-  const totalHutangDariSumber = sumberHutang.reduce((s, h) => s + h.nominal, 0);
-  const totalHutang =
-    totalHutangDariSumber > 0
-      ? totalHutangDariSumber
-      : parseInt(configMap.total_hutang ?? "800000000");
+      if (!viewRingkasan) {
+        const totalHutangDariSumber = sumberHutang.reduce((s, h) => s + h.nominal, 0);
+        totalHutang = totalHutangDariSumber > 0 ? totalHutangDariSumber : parseInt(configMap.total_hutang ?? "800000000");
+        totalTerkumpul = ((adminPembayaran ?? []) as Pick<Pembayaran, "nominal">[]).reduce((s, p) => s + p.nominal, 0);
+        sisaHutang = Math.max(0, totalHutang - totalTerkumpul);
+        totalDonatur = (adminDonatur ?? []).length;
+      }
+    } catch (e) {
+      console.error("Gagal fallback server aggregate:", e);
+    }
+  }
+
+  // Sinkronkan kalkulasi progres visual
+  progress = hitungProgress(totalTerkumpul, totalHutang);
+  progressStr = formatPersen(totalTerkumpul, totalHutang);
 
   // Periksa apakah admin sedang dalam status login
   const { data: { user } } = await supabase.auth.getUser();
@@ -87,16 +125,6 @@ export default async function PublicHomePage({
       isAdminLoggedIn = true;
     }
   }
-
-  // Total donasi murni yang dihimpun dari para donatur
-  const totalTerkumpul = ((semuaPembayaranRaw ?? []) as Pick<Pembayaran, "nominal">[]).reduce(
-    (s, p) => s + p.nominal,
-    0
-  );
-  const sisaHutang = Math.max(0, totalHutang - totalTerkumpul);
-  const progress = hitungProgress(totalTerkumpul, totalHutang);
-  const progressStr = formatPersen(totalTerkumpul, totalHutang);
-  const totalDonatur = (donaturRaw ?? []).length;
 
   const now = new Date();
   const labelBulan = `${NAMA_BULAN[now.getMonth()]} ${now.getFullYear()}`;

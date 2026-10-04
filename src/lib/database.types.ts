@@ -261,7 +261,34 @@ export interface Database {
     }
 
     Views: {
-      [_ in never]: never
+      view_ringkasan_donasi: {
+        Row: {
+          total_hutang: number
+          total_donasi_terkumpul: number
+          total_setor_ke_toko: number
+          sisa_hutang: number
+          sisa_hutang_ke_toko: number
+          total_donatur_aktif: number
+          persentase_tercapai: number
+        }
+        Relationships: []
+      }
+      view_sumber_hutang_detail: {
+        Row: {
+          id: number
+          nama_kreditor: string
+          nominal: number
+          terbayar: number
+          sisa: number
+          status: 'belum_lunas' | 'sebagian' | 'lunas'
+          keterangan: string | null
+          created_by_name: string | null
+          updated_by_name: string | null
+          created_at: string
+          updated_at: string
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_admin: {
