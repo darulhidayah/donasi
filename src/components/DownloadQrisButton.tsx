@@ -36,7 +36,6 @@ export default function DownloadQrisButton({
       setDownloaded(true);
       setTimeout(() => setDownloaded(false), 2500);
     } catch {
-      // Fallback direct link download
       const link = document.createElement("a");
       link.href = imageUrl;
       link.download = fileName;
@@ -58,16 +57,16 @@ export default function DownloadQrisButton({
       disabled={downloading}
       title="Download gambar QRIS untuk disimpan di galeri / pembayaran"
       className={cn(
-        "inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer shadow-2xs disabled:opacity-70",
+        "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer shadow-soft disabled:opacity-70",
         downloaded
-          ? "bg-emerald-600 text-white shadow-emerald-500/20"
-          : "bg-surface border border-outline/80 hover:border-emerald-500/50 hover:bg-emerald-500/5 text-neutral-800 dark:text-neutral-200",
+          ? "bg-status-success text-white shadow-soft"
+          : "border border-primary/40 text-primary-dark dark:text-primary hover:bg-primary/10 hover:border-primary/60 bg-surface",
         className
       )}
     >
       {downloading ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin text-emerald-600 dark:text-emerald-400" />
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <span>Mengunduh QRIS...</span>
         </>
       ) : downloaded ? (
@@ -77,7 +76,7 @@ export default function DownloadQrisButton({
         </>
       ) : (
         <>
-          <Download className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <Download className="h-4 w-4 text-primary-dark dark:text-primary" />
           <span>Unduh Gambar QRIS</span>
         </>
       )}

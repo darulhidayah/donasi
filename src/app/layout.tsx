@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import NavigationProgress from "@/components/NavigationProgress";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-inter",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   display: "swap",
+  variable: "--font-space-grotesk",
 });
 
 export const metadata: Metadata = {
@@ -40,43 +40,35 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f9f8f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#faf8f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0e0c" },
   ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
 };
 
+const themeInitScript = `(function(){try{var t=localStorage.getItem('donasi-mdh-theme');var r=document.documentElement;if(t==='dark'){r.classList.remove('light');r.classList.add('dark');}else{r.classList.remove('dark');r.classList.add('light');}}catch(e){document.documentElement.classList.add('light');}})();`;
+
+const animationsInitScript = `(function(){var r=document.documentElement;function o(){r.classList.add('animations-enabled');window.removeEventListener('load',o);}if('requestAnimationFrame'in window){window.addEventListener('load',o);}else{setTimeout(o,100);}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="id"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${inter.variable} ${spaceGrotesk.variable}`}
     >
       <head>
         <link rel="icon" href="/favicon.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                var stored = localStorage.getItem('donasi-mdh-theme');
-                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                var theme = stored ? stored : (prefersDark ? 'dark' : 'light');
-                document.documentElement.classList.add(theme);
-              } catch (e) {}
-            `,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-screen bg-background text-on-surface antialiased font-sans">
+      <body className="font-body text-body-md min-h-screen bg-background text-on-surface overflow-x-hidden antialiased">
+        <script dangerouslySetInnerHTML={{ __html: animationsInitScript }} />
         <NavigationProgress />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
 }
-

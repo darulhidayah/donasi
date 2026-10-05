@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   Copy, Check, ChevronLeft, ChevronRight, Download,
   X, FileSpreadsheet, QrCode, CreditCard, Banknote, Wallet,
+  Users, Building2,
 } from "lucide-react";
 
 interface Pembayaran {
@@ -206,24 +207,39 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
         </button>
       </div>
 
-      {/* Cards Bulan Ini */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <SummaryCard
+      {/* Cards Bulan Ini (Sama Style dengan Dashboard Admin) */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 stagger-children">
+        <StatCard
+          icon={<Users className="h-5 w-5" />}
+          watermark={<Users className="h-12 w-12" />}
           label="Donatur Bayar"
           value={pembayaranBulan.length.toString() + " Orang"}
           sub={`Periode ${labelBulan}`}
+          theme="primary"
         />
-        <SummaryCard label="Donasi Masuk" value={formatRupiah(totalDonasiBulan)} />
-        <SummaryCard
+        <StatCard
+          icon={<Banknote className="h-5 w-5" />}
+          watermark={<Banknote className="h-12 w-12" />}
+          label="Donasi Masuk"
+          value={formatRupiah(totalDonasiBulan)}
+          sub="Total donasi terhimpun"
+          theme="gold"
+        />
+        <StatCard
+          icon={<Building2 className="h-5 w-5" />}
+          watermark={<Building2 className="h-12 w-12" />}
           label="Setor Pihak Ketiga"
           value={formatRupiah(totalSetorBulan)}
           sub={totalSetorBulan > 0 ? "Disalurkan ke toko" : "Belum ada setoran"}
+          theme="success"
         />
-        <SummaryCard
+        <StatCard
+          icon={<Wallet className="h-5 w-5" />}
+          watermark={<Wallet className="h-12 w-12" />}
           label="Sisa Saldo Kas"
           value={formatRupiah(sisaSaldoKasBulan)}
-          highlight
           sub={sisaSaldoKasBulan === 0 ? "Tersalurkan penuh" : "Tersimpan di kas"}
+          theme="primary"
         />
       </div>
 
@@ -232,19 +248,19 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-outline-variant/60">
 
           <div>
-            <h2 className="text-base md:text-lg font-semibold text-heading flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-base md:text-lg font-bold font-headline text-on-surface flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary-dark dark:text-primary" />
               <span>Jumlah Nilai Donasi — Periode {labelBulan}</span>
             </h2>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-xs text-on-surface-variant mt-0.5">
               Rincian dana masuk per saluran pembayaran: QRIS, Rekening Masjid, dan Tunai
             </p>
           </div>
-          <div className="text-left sm:text-right bg-surface-container-low px-3.5 py-1.5 rounded-xl border border-outline/40">
-            <span className="text-[10px] uppercase font-semibold text-neutral-500 block">
+          <div className="text-left sm:text-right bg-surface-container-low px-3.5 py-1.5 rounded-xl border border-outline-variant/40">
+            <span className="text-[10px] uppercase font-semibold text-on-surface-variant font-label block">
               = Jumlah Keseluruhan Donasi
             </span>
-            <span className="font-mono text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+            <span className="font-mono text-lg font-bold text-primary-dark dark:text-primary tabular-nums">
               {formatRupiah(totalKeseluruhanDonasiBulan)}
             </span>
           </div>
@@ -253,20 +269,20 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
         {/* 3 Grid Saluran: QRIS, Rekening Kas, Tunai */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
           {/* 1. Via QRIS */}
-          <div className="rounded-xl border border-outline/60 bg-surface-container-low/40 p-4 transition-all hover:border-emerald-500/50 hover:shadow-sm">
+          <div className="rounded-xl border border-outline-variant/60 bg-surface-container-low/40 p-4 transition-all hover:border-primary/50 hover:shadow-soft">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-heading flex items-center gap-1.5">
-                <QrCode className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5 font-label">
+                <QrCode className="h-4 w-4 text-primary-dark dark:text-primary" />
                 Via QRIS
               </span>
-              <span className="text-[11px] font-mono text-neutral-500 bg-surface px-2 py-0.5 rounded-md border border-outline/40">
+              <span className="text-[11px] font-mono text-on-surface-variant bg-surface px-2 py-0.5 rounded-md border border-outline-variant/40">
                 {countQRISBulan} Donasi
               </span>
             </div>
-            <p className="font-mono text-xl md:text-2xl font-semibold text-heading mt-2 tabular-nums">
+            <p className="font-mono text-xl md:text-2xl font-bold font-headline text-on-surface mt-2 tabular-nums">
               {formatRupiah(donasiQRISBulan)}
             </p>
-            <p className="text-[11px] text-neutral-500 mt-1">
+            <p className="text-[11px] text-on-surface-variant mt-1">
               {totalKeseluruhanDonasiBulan > 0
                 ? Math.round((donasiQRISBulan / totalKeseluruhanDonasiBulan) * 100)
                 : 0}
@@ -275,20 +291,20 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
           </div>
 
           {/* 2. Via Rekening Masjid */}
-          <div className="rounded-xl border border-outline/60 bg-surface-container-low/40 p-4 transition-all hover:border-emerald-500/50 hover:shadow-sm">
+          <div className="rounded-xl border border-outline-variant/60 bg-surface-container-low/40 p-4 transition-all hover:border-primary/50 hover:shadow-soft">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-heading flex items-center gap-1.5">
-                <CreditCard className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5 font-label">
+                <CreditCard className="h-4 w-4 text-primary-dark dark:text-primary" />
                 Via Rekening Masjid
               </span>
-              <span className="text-[11px] font-mono text-neutral-500 bg-surface px-2 py-0.5 rounded-md border border-outline/40">
+              <span className="text-[11px] font-mono text-on-surface-variant bg-surface px-2 py-0.5 rounded-md border border-outline-variant/40">
                 {countRekeningBulan} Donasi
               </span>
             </div>
-            <p className="font-mono text-xl md:text-2xl font-semibold text-heading mt-2 tabular-nums">
+            <p className="font-mono text-xl md:text-2xl font-bold font-headline text-on-surface mt-2 tabular-nums">
               {formatRupiah(donasiRekeningBulan)}
             </p>
-            <p className="text-[11px] text-neutral-500 mt-1">
+            <p className="text-[11px] text-on-surface-variant mt-1">
               {totalKeseluruhanDonasiBulan > 0
                 ? Math.round((donasiRekeningBulan / totalKeseluruhanDonasiBulan) * 100)
                 : 0}
@@ -297,20 +313,20 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
           </div>
 
           {/* 3. Via Tunai */}
-          <div className="rounded-xl border border-outline/60 bg-surface-container-low/40 p-4 transition-all hover:border-emerald-500/50 hover:shadow-sm">
+          <div className="rounded-xl border border-outline-variant/60 bg-surface-container-low/40 p-4 transition-all hover:border-primary/50 hover:shadow-soft">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-heading flex items-center gap-1.5">
-                <Banknote className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-semibold text-on-surface flex items-center gap-1.5 font-label">
+                <Banknote className="h-4 w-4 text-primary-dark dark:text-primary" />
                 Via Tunai
               </span>
-              <span className="text-[11px] font-mono text-neutral-500 bg-surface px-2 py-0.5 rounded-md border border-outline/40">
+              <span className="text-[11px] font-mono text-on-surface-variant bg-surface px-2 py-0.5 rounded-md border border-outline-variant/40">
                 {countTunaiBulan} Donasi
               </span>
             </div>
-            <p className="font-mono text-xl md:text-2xl font-semibold text-heading mt-2 tabular-nums">
+            <p className="font-mono text-xl md:text-2xl font-bold font-headline text-on-surface mt-2 tabular-nums">
               {formatRupiah(donasiTunaiBulan)}
             </p>
-            <p className="text-[11px] text-neutral-500 mt-1">
+            <p className="text-[11px] text-on-surface-variant mt-1">
               {totalKeseluruhanDonasiBulan > 0
                 ? Math.round((donasiTunaiBulan / totalKeseluruhanDonasiBulan) * 100)
                 : 0}
@@ -423,7 +439,7 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
                     <td className="px-3 py-3 text-right font-mono text-xs text-on-surface">
                       {r.setorPihakKetiga > 0 ? formatRupiah(r.setorPihakKetiga) : "-"}
                     </td>
-                    <td className="px-3 py-3 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                    <td className="px-3 py-3 text-right font-mono font-semibold text-primary-dark dark:text-primary">
                       {formatRupiah(r.sisaKasBulan)}
                     </td>
                     <td className="px-3 py-3 text-right font-mono font-bold text-status-danger">
@@ -456,7 +472,7 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
                 <td className="px-3 py-3.5 text-right font-bold text-on-surface">
                   {formatRupiah(totalSetorAll)}
                 </td>
-                <td className="px-3 py-3.5 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                <td className="px-3 py-3.5 text-right font-bold text-primary-dark dark:text-primary">
                   {formatRupiah(sisaSaldoKasAll)}
                 </td>
                 <td className="px-3 py-3.5 text-right font-bold text-status-danger">
@@ -472,41 +488,56 @@ export default function AdminLaporanClient({ allPembayaran, semuaSetor, config, 
   );
 }
 
-function SummaryCard({
+function StatCard({
+  icon,
+  watermark,
   label,
   value,
   sub,
-  highlight,
-  action,
+  theme = "primary",
 }: {
+  icon: React.ReactNode;
+  watermark?: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
-  highlight?: boolean;
-  action?: React.ReactNode;
+  theme?: "primary" | "success" | "danger" | "gold";
 }) {
+  const chipClass =
+    theme === "success"
+      ? "bg-status-success/10 text-status-success"
+      : theme === "danger"
+      ? "bg-status-danger/10 text-status-danger"
+      : theme === "gold"
+      ? "bg-primary-container text-on-primary-container"
+      : "bg-primary/10 text-primary-dark dark:text-primary";
+
+  const watermarkClass =
+    theme === "success"
+      ? "text-status-success"
+      : theme === "danger"
+      ? "text-status-danger"
+      : theme === "gold"
+      ? "text-primary-light"
+      : "text-primary";
+
   return (
-    <div
-      className={cn(
-        "rounded-xl p-4 shadow-sm transition-colors",
-        highlight
-          ? "bg-primary-container text-on-primary-container ring-1 ring-primary/20"
-          : "bg-surface text-on-surface ring-1 ring-black/[0.05] dark:ring-white/[0.06]"
+    <div className="bento-card bg-white dark:bg-surface border border-outline-variant/60 overflow-hidden group hover-lift relative p-5 shadow-soft">
+      {watermark && (
+        <div className={`absolute right-3 top-3 opacity-15 pointer-events-none ${watermarkClass}`}>
+          {watermark}
+        </div>
       )}
-    >
-      <div className="flex items-start justify-between">
-        <p
-          className={cn(
-            "text-[11px] font-semibold uppercase tracking-wider",
-            highlight ? "text-on-primary-container/80" : "text-on-surface-variant"
-          )}
-        >
-          {label}
-        </p>
-        {action}
-      </div>
-      <p className="text-xl font-black font-mono tabular-nums mt-1 leading-tight tracking-tight">{value}</p>
-      {sub && <p className="text-[11px] text-on-surface-variant mt-1">{sub}</p>}
+      <span className={`flex h-9 w-9 items-center justify-center rounded-xl mb-3 shadow-2xs ${chipClass}`}>
+        {icon}
+      </span>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant font-label">
+        {label}
+      </p>
+      <p className="font-headline text-lg md:text-xl font-bold text-on-surface mt-1 tabular-nums leading-tight tracking-tight truncate">
+        {value}
+      </p>
+      {sub && <p className="text-[11px] text-on-surface-variant/70 mt-1">{sub}</p>}
     </div>
   );
 }

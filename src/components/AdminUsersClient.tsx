@@ -9,7 +9,13 @@ import type { Database } from "@/lib/database.types";
 
 type AdminUser = Database["public"]["Tables"]["admin_users"]["Row"];
 
-export default function AdminUsersClient({ initialList }: { initialList: AdminUser[] }) {
+export default function AdminUsersClient({
+  initialList,
+  maxAdmin = 3,
+}: {
+  initialList: AdminUser[];
+  maxAdmin?: number;
+}) {
   const [list, setList] = useState<AdminUser[]>(initialList);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
@@ -17,7 +23,7 @@ export default function AdminUsersClient({ initialList }: { initialList: AdminUs
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ email: "", nama: "", role: "admin" as "superadmin" | "admin" });
 
-  const MAX_ADMIN = 3;
+  const MAX_ADMIN = maxAdmin;
   const aktifCount = list.filter((u) => u.aktif).length;
   const canAdd = aktifCount < MAX_ADMIN;
 
@@ -76,10 +82,14 @@ export default function AdminUsersClient({ initialList }: { initialList: AdminUs
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-on-surface">Manajemen Admin</h1>
-          <p className="text-sm text-on-surface-variant">{aktifCount}/{MAX_ADMIN} admin aktif</p>
+          <h1 className="text-xl md:text-2xl font-bold font-headline text-on-surface">Manajemen Admin</h1>
+          <p className="text-sm text-on-surface-variant font-body">{aktifCount}/{MAX_ADMIN} admin aktif</p>
         </div>
-        <button onClick={openAdd} disabled={!canAdd} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-on-primary hover:bg-primary/90 disabled:opacity-50 transition-colors">
+        <button
+          onClick={openAdd}
+          disabled={!canAdd}
+          className="flex items-center gap-2 rounded-xl bg-primary-container px-4 py-2.5 text-xs font-semibold text-on-primary-container hover:brightness-110 disabled:opacity-50 transition-all shadow-soft active:scale-95 font-label"
+        >
           <Plus className="h-4 w-4" /> Tambah Admin
         </button>
       </div>
@@ -91,9 +101,9 @@ export default function AdminUsersClient({ initialList }: { initialList: AdminUs
       )}
 
       {/* Info Card */}
-      <div className="rounded-xl bg-primary-container/30 border border-primary/20 px-4 py-3 text-sm text-on-primary-container">
-        <p className="font-semibold text-xs mb-1">💡 Informasi Hak Akses Admin (Maksimal 3 Orang):</p>
-        <p className="text-xs text-on-surface-variant">
+      <div className="rounded-xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-on-surface">
+        <p className="font-bold text-xs mb-1 text-primary-dark dark:text-primary font-label">💡 Informasi Hak Akses Admin (Maksimal {MAX_ADMIN} Orang):</p>
+        <p className="text-xs text-on-surface-variant font-body">
           Admin yang ditambahkan di bawah ini dapat langsung masuk ke aplikasi menggunakan tombol <strong>Masuk dengan Google</strong> dengan akun email tersebut.
         </p>
       </div>
@@ -235,7 +245,7 @@ export default function AdminUsersClient({ initialList }: { initialList: AdminUs
                 type="button"
                 onClick={handleSave}
                 disabled={isPending}
-                className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-on-primary hover:bg-primary/90 disabled:opacity-60 shadow-sm"
+                className="flex-1 rounded-xl bg-primary-container py-2.5 text-sm font-semibold text-on-primary-container hover:brightness-110 disabled:opacity-60 shadow-soft transition-all active:scale-95 font-label cursor-pointer"
               >
                 {isPending ? "Menyimpan..." : "Simpan Admin"}
               </button>

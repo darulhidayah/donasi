@@ -18,12 +18,17 @@ type Pembayaran = Database["public"]["Tables"]["pembayaran"]["Row"];
 const METODE_OPTIONS = ["Transfer", "QRIS", "Tunai", "Lainnya"] as const;
 
 export default function AdminPembayaranClient({
-  donaturList, initialPembayaran, bulanDefault, adminNama,
+  donaturList,
+  initialPembayaran,
+  bulanDefault,
+  adminNama,
+  minimalDonasi = 50000,
 }: {
   donaturList: Donatur[];
   initialPembayaran: Pembayaran[];
   bulanDefault: string;
   adminNama: string;
+  minimalDonasi?: number;
 }) {
   const now = new Date();
   const [bulanTahun, setBulanTahun] = useState({ tahun: now.getFullYear(), bulan: now.getMonth() + 1 });
@@ -43,7 +48,7 @@ export default function AdminPembayaranClient({
 
   const [form, setForm] = useState({
     donatur_id: "" as string,
-    nominal: 50000,
+    nominal: minimalDonasi,
     metode: "Transfer" as Pembayaran["metode"],
     tgl_bayar: new Date().toISOString().split("T")[0],
     keterangan: "",
@@ -71,7 +76,7 @@ export default function AdminPembayaranClient({
     setEditing(null);
     setForm({
       donatur_id: "",
-      nominal: 50000,
+      nominal: minimalDonasi,
       metode: "Transfer",
       tgl_bayar: new Date().toISOString().split("T")[0],
       keterangan: "",
@@ -98,8 +103,8 @@ export default function AdminPembayaranClient({
       setError("Pilih donatur terlebih dahulu.");
       return;
     }
-    if (form.nominal < 50000) {
-      setError("Minimal donasi Rp 50.000.");
+    if (form.nominal < minimalDonasi) {
+      setError(`Minimal donasi ${formatRupiah(minimalDonasi)}.`);
       return;
     }
     setError(null);
@@ -228,7 +233,7 @@ export default function AdminPembayaranClient({
             .insert({
               nama: nama.trim(),
               no_hp: noHp || null,
-              minimal_bulanan: 50000,
+              minimal_bulanan: minimalDonasi,
               metode_default: "Transfer",
               status: "aktif",
               created_by_name: `${adminNama} (Auto Import)`,
@@ -249,7 +254,7 @@ export default function AdminPembayaranClient({
           "Jumlah",
           "Donasi"
         );
-        const nominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || 50000;
+        const nominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || minimalDonasi;
 
         let rawMetode = getExcelValue(
           r,
@@ -280,7 +285,7 @@ export default function AdminPembayaranClient({
           nama_donatur: nama.trim(),
           no_hp_donatur: noHp || null,
           bulan: bulanDB,
-          nominal: Math.max(50000, nominal),
+          nominal: Math.max(minimalDonasi, nominal),
           metode,
           keterangan: ket || null,
           tgl_bayar: new Date().toISOString().split("T")[0],
@@ -446,7 +451,7 @@ export default function AdminPembayaranClient({
                               ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
                               : p.metode === "QRIS"
                               ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                              : "bg-status-success/10 text-status-success border border-status-success/20"
                           )}
                         >
                           {p.metode === "Transfer" ? (
@@ -558,7 +563,7 @@ export default function AdminPembayaranClient({
                     setForm((f) => ({
                       ...f,
                       donatur_id: e.target.value,
-                      nominal: d?.minimal_bulanan ?? 50000,
+                      nominal: d?.minimal_bulanan ?? minimalDonasi,
                       metode: (d?.metode_default ?? "Transfer") as Pembayaran["metode"],
                     }));
                   }}
@@ -585,8 +590,8 @@ export default function AdminPembayaranClient({
                       setForm((f) => ({ ...f, nominal: parseInt(e.target.value) || 0 }))
                     }
                     type="number"
-                    min={50000}
-                    step={50000}
+                    min={minimalDonasi}
+                    step={minimalDonasi}
                     className={inputCls}
                   />
                 </div>

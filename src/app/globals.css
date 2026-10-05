@@ -2,107 +2,150 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ============ MODERN FINANCIAL DESIGN SYSTEM — WARM MINIMAL ============ */
+/* ============ AURORA GOLD MATERIAL 3 DESIGN SYSTEM ============ */
 
-/* LIGHT THEME: Warm Off-White Canvas — bukan putih steril, tidak panas */
+/* ============ LIGHT THEME (Aurora Gold) ============ */
 :root,
 .light {
-  --c-background: 249 248 246;      /* Warm off-white — linen, bukan kertas */
-  --c-on-background: 28 28 30;
+  --c-primary: 180 135 25;
+  --c-on-primary: 255 255 255;
+  --c-primary-container: 245 200 80;
+  --c-on-primary-container: 60 40 0;
+  --c-primary-fixed: 255 224 136;
+  --c-primary-fixed-dim: 233 195 73;
+  --c-primary-dark: 140 105 15;
+  --c-primary-light: 233 195 73;
 
-  --c-surface: 255 255 255;          /* Card tetap putih — kontras di atas warm bg */
-  --c-on-surface: 28 28 30;
-  --c-surface-variant: 246 246 244;
-  --c-on-surface-variant: 99 110 123;
+  --c-secondary: 100 80 50;
+  --c-on-secondary: 255 255 255;
+  --c-secondary-container: 230 205 160;
+  --c-on-secondary-container: 50 35 10;
+
+  --c-tertiary: 120 100 40;
+  --c-on-tertiary: 255 255 255;
+  --c-tertiary-container: 245 220 160;
+  --c-on-tertiary-container: 50 40 0;
+
+  --c-heading: 140 105 15;
+
+  --c-error: 186 26 26;
+  --c-on-error: 255 255 255;
+  --c-error-container: 255 218 214;
+  --c-on-error-container: 147 0 10;
+
+  --c-background: 250 248 245;
+  --c-on-background: 30 28 25;
+  --c-surface: 255 255 255;
+  --c-on-surface: 30 28 25;
+  --c-surface-variant: 245 242 238;
+  --c-on-surface-variant: 90 85 75;
+  --c-surface-bright: 255 255 255;
+  --c-surface-dim: 235 232 227;
 
   --c-surface-container-lowest: 255 255 255;
-  --c-surface-container-low: 245 245 243;
-  --c-surface-container: 238 238 236;
-  --c-surface-container-high: 229 229 227;
+  --c-surface-container-low: 248 246 242;
+  --c-surface-container: 242 239 234;
+  --c-surface-container-high: 235 232 226;
+  --c-surface-container-highest: 228 224 218;
 
-  --c-outline: 218 219 220;          /* Subtle — hampir tidak kelihatan di light */
-  --c-outline-variant: 235 235 234;
+  --c-outline: 160 155 145;
+  --c-outline-variant: 220 216 208;
 
-  --c-primary: 5 150 105;
-  --c-on-primary: 255 255 255;
-  --c-primary-container: 236 253 245;
-  --c-on-primary-container: 6 95 70;
-  --c-primary-dark: 4 120 87;
-  --c-primary-light: 16 185 129;
+  --c-inverse-surface: 45 42 38;
+  --c-inverse-on-surface: 240 237 232;
+  --c-inverse-primary: 233 195 73;
 
-  --c-secondary: 99 110 123;
-  --c-on-secondary: 255 255 255;
-  --c-secondary-container: 241 245 249;
-  --c-on-secondary-container: 30 41 59;
+  --c-accent-blue: 59 130 246;
+  --c-accent-purple: 139 92 246;
+  --c-accent-cyan: 6 182 212;
 
-  --c-heading: 6 95 70;
-
-  --c-error: 220 38 68;
-  --c-on-error: 255 255 255;
-  --c-error-container: 255 241 242;
-  --c-on-error-container: 153 18 52;
-
-  --c-status-success: 16 185 129;
-  --c-status-warning: 245 158 11;
-  --c-status-danger: 220 38 68;
+  --c-status-success: 22 163 74;
+  --c-status-warning: 217 119 6;
+  --c-status-danger: 220 38 38;
+  --c-on-status-success: 255 255 255;
+  --c-on-status-warning: 255 255 255;
+  --c-on-status-danger: 255 255 255;
 
   color-scheme: light;
 }
 
-/* DARK THEME: Warm Near-Black — bukan void, ada kedalaman */
+/* ============ DARK THEME (Midnight Gold) ============ */
 .dark {
-  --c-background: 10 10 10;          /* Near-black — bukan void hitam */
-  --c-on-background: 230 230 228;
+  --c-primary: 233 195 73;
+  --c-on-primary: 60 40 0;
+  --c-primary-container: 180 135 25;
+  --c-on-primary-container: 255 255 255;
+  --c-primary-fixed: 255 224 136;
+  --c-primary-fixed-dim: 233 195 73;
+  --c-primary-dark: 180 135 25;
+  --c-primary-light: 233 195 73;
 
-  --c-surface: 18 18 18;             /* Card punya lift di atas bg */
-  --c-on-surface: 230 230 228;
-  --c-surface-variant: 24 24 24;
-  --c-on-surface-variant: 155 155 155;
+  --c-secondary: 180 160 120;
+  --c-on-secondary: 50 35 10;
+  --c-secondary-container: 70 55 30;
+  --c-on-secondary-container: 230 205 160;
 
-  --c-surface-container-lowest: 10 10 10;
-  --c-surface-container-low: 24 24 24;
-  --c-surface-container: 30 30 30;
-  --c-surface-container-high: 40 40 40;
+  --c-tertiary: 190 170 100;
+  --c-on-tertiary: 50 40 0;
+  --c-tertiary-container: 80 65 20;
+  --c-on-tertiary-container: 245 220 160;
 
-  --c-outline: 42 42 45;             /* Sangat subtle — tidak memotong seperti pisau */
-  --c-outline-variant: 32 32 35;
+  --c-heading: 233 195 73;
 
-  --c-primary: 16 185 129;
-  --c-on-primary: 0 0 0;
-  --c-primary-container: 4 47 31;
-  --c-on-primary-container: 110 231 183;
-  --c-primary-dark: 5 150 105;
-  --c-primary-light: 52 211 153;
+  --c-error: 255 180 171;
+  --c-on-error: 147 0 10;
+  --c-error-container: 147 0 10;
+  --c-on-error-container: 255 218 214;
 
-  --c-secondary: 155 155 155;
-  --c-on-secondary: 0 0 0;
-  --c-secondary-container: 26 26 28;
-  --c-on-secondary-container: 240 240 240;
+  --c-background: 15 14 12;
+  --c-on-background: 230 228 224;
+  --c-surface: 24 23 20;
+  --c-on-surface: 230 228 224;
+  --c-surface-variant: 34 32 28;
+  --c-on-surface-variant: 165 160 150;
+  --c-surface-bright: 45 42 38;
+  --c-surface-dim: 15 14 12;
 
-  --c-heading: 110 231 183;
+  --c-surface-container-lowest: 12 11 9;
+  --c-surface-container-low: 20 19 16;
+  --c-surface-container: 28 26 23;
+  --c-surface-container-high: 36 34 30;
+  --c-surface-container-highest: 44 42 38;
 
-  --c-error: 251 113 133;
-  --c-on-error: 76 5 25;
-  --c-error-container: 76 5 25;
-  --c-on-error-container: 255 228 230;
+  --c-outline: 120 115 105;
+  --c-outline-variant: 55 52 46;
 
-  --c-status-success: 16 185 129;
+  --c-inverse-surface: 225 222 218;
+  --c-inverse-on-surface: 45 42 38;
+  --c-inverse-primary: 140 105 15;
+
+  --c-accent-blue: 96 165 250;
+  --c-accent-purple: 167 139 250;
+  --c-accent-cyan: 34 211 238;
+
+  --c-status-success: 34 197 94;
   --c-status-warning: 251 191 36;
-  --c-status-danger: 251 113 133;
+  --c-status-danger: 248 113 113;
+  --c-on-status-success: 6 40 18;
+  --c-on-status-warning: 40 28 0;
+  --c-on-status-danger: 69 10 10;
 
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  --color-heading: rgb(var(--c-heading) / <alpha-value>);
+  --font-sans: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: var(--font-inter), "Inter", sans-serif;
+  --font-headline: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  --font-display: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  --font-label: var(--font-space-grotesk), "Space Grotesk", sans-serif;
 
   --color-primary: rgb(var(--c-primary) / <alpha-value>);
   --color-on-primary: rgb(var(--c-on-primary) / <alpha-value>);
   --color-primary-container: rgb(var(--c-primary-container) / <alpha-value>);
   --color-on-primary-container: rgb(var(--c-on-primary-container) / <alpha-value>);
+  --color-primary-fixed: rgb(var(--c-primary-fixed) / <alpha-value>);
+  --color-primary-fixed-dim: rgb(var(--c-primary-fixed-dim) / <alpha-value>);
   --color-primary-dark: rgb(var(--c-primary-dark) / <alpha-value>);
   --color-primary-light: rgb(var(--c-primary-light) / <alpha-value>);
 
@@ -111,7 +154,15 @@
   --color-secondary-container: rgb(var(--c-secondary-container) / <alpha-value>);
   --color-on-secondary-container: rgb(var(--c-on-secondary-container) / <alpha-value>);
 
+  --color-tertiary: rgb(var(--c-tertiary) / <alpha-value>);
+  --color-on-tertiary: rgb(var(--c-on-tertiary) / <alpha-value>);
+  --color-tertiary-container: rgb(var(--c-tertiary-container) / <alpha-value>);
+  --color-on-tertiary-container: rgb(var(--c-on-tertiary-container) / <alpha-value>);
+
+  --color-heading: rgb(var(--c-heading) / <alpha-value>);
+
   --color-error: rgb(var(--c-error) / <alpha-value>);
+  --color-on-error: rgb(var(--c-on-error) / <alpha-value>);
   --color-error-container: rgb(var(--c-error-container) / <alpha-value>);
   --color-on-error-container: rgb(var(--c-on-error-container) / <alpha-value>);
 
@@ -122,141 +173,261 @@
   --color-on-surface: rgb(var(--c-on-surface) / <alpha-value>);
   --color-surface-variant: rgb(var(--c-surface-variant) / <alpha-value>);
   --color-on-surface-variant: rgb(var(--c-on-surface-variant) / <alpha-value>);
+  --color-surface-bright: rgb(var(--c-surface-bright) / <alpha-value>);
+  --color-surface-dim: rgb(var(--c-surface-dim) / <alpha-value>);
 
   --color-surface-container-lowest: rgb(var(--c-surface-container-lowest) / <alpha-value>);
   --color-surface-container-low: rgb(var(--c-surface-container-low) / <alpha-value>);
   --color-surface-container: rgb(var(--c-surface-container) / <alpha-value>);
   --color-surface-container-high: rgb(var(--c-surface-container-high) / <alpha-value>);
+  --color-surface-container-highest: rgb(var(--c-surface-container-highest) / <alpha-value>);
 
   --color-outline: rgb(var(--c-outline) / <alpha-value>);
   --color-outline-variant: rgb(var(--c-outline-variant) / <alpha-value>);
 
+  --color-inverse-surface: rgb(var(--c-inverse-surface) / <alpha-value>);
+  --color-inverse-on-surface: rgb(var(--c-inverse-on-surface) / <alpha-value>);
+  --color-inverse-primary: rgb(var(--c-inverse-primary) / <alpha-value>);
+
   --color-status-success: rgb(var(--c-status-success) / <alpha-value>);
   --color-status-warning: rgb(var(--c-status-warning) / <alpha-value>);
   --color-status-danger: rgb(var(--c-status-danger) / <alpha-value>);
+  --color-on-status-success: rgb(var(--c-on-status-success) / <alpha-value>);
+  --color-on-status-warning: rgb(var(--c-on-status-warning) / <alpha-value>);
+  --color-on-status-danger: rgb(var(--c-on-status-danger) / <alpha-value>);
+
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* BASE STYLES */
+/* ============ TYPOGRAPHY UTILITIES ============ */
+.font-headline {
+  font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+}
+.font-display {
+  font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+}
+.font-label {
+  font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+}
+.font-body {
+  font-family: var(--font-inter), "Inter", sans-serif;
+}
+
+/* BASE STYLES - BERSIH, SOLID & SUBTLE GRADIENT (BEBAS BULAT-BULAT KOTOR) */
 * {
   box-sizing: border-box;
 }
 
 body {
-  font-family: var(--font-sans);
   background-color: rgb(var(--c-background));
+  background-image: linear-gradient(180deg, rgb(var(--c-background)) 0%, rgb(var(--c-surface-container-low)) 100%);
+  background-attachment: fixed;
   color: rgb(var(--c-on-background));
+  min-height: 100vh;
+  font-family: var(--font-inter), "Inter", sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.012em;
-  text-rendering: optimizeLegibility;
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* ==============================================================
-   STICKY HEADER: 100% OPAQUE & BLURRED (ZERO TRANSPARENCY LEAK)
-   ============================================================== */
+.dark body {
+  background-image: linear-gradient(180deg, #131210 0%, #0f0e0c 100%);
+}
+
+/* ============ UNIFIED CARD STYLE (KONSISTEN DI SEMUA PAGE) ============ */
+.bento-card,
+.app-card {
+  background: rgb(var(--c-surface));
+  border: 1px solid rgb(var(--c-outline-variant) / 0.7);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+.bento-card:hover,
+.app-card:hover {
+  transform: translateY(-2px);
+  border-color: rgb(var(--c-primary-light) / 0.6);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+.dark .bento-card,
+.dark .app-card {
+  background: rgb(var(--c-surface));
+  border-color: rgb(var(--c-outline-variant) / 0.5);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.dark .bento-card:hover,
+.dark .app-card:hover {
+  border-color: rgb(var(--c-primary-light) / 0.5);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+}
+
+/* ============ AURORA PANEL (HERO / SPECIAL CARD) ============ */
+.aurora-panel {
+  background: linear-gradient(
+    135deg,
+    rgb(var(--c-surface-container-lowest)) 0%,
+    rgb(var(--c-surface-container-low)) 100%
+  );
+  border: 1px solid rgb(var(--c-outline-variant) / 0.8);
+  border-radius: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+}
+
+.aurora-panel:hover {
+  border-color: rgb(var(--c-primary-light) / 0.6);
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.08);
+}
+
+.dark .aurora-panel {
+  background: linear-gradient(
+    135deg,
+    rgb(var(--c-surface)) 0%,
+    rgb(var(--c-surface-container)) 100%
+  );
+  border-color: rgb(var(--c-outline-variant) / 0.5);
+}
+
+.dark .aurora-panel:hover {
+  border-color: rgb(var(--c-primary-light) / 0.5);
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.5);
+}
+
+/* ============ UNIFIED TABLE STYLE (KONSISTEN DI SEMUA PAGE) ============ */
+.app-table-container {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 1.25rem;
+  border: 1px solid rgb(var(--c-outline-variant) / 0.6);
+  background: rgb(var(--c-surface));
+}
+
+.app-table {
+  width: 100%;
+  caption-side: bottom;
+  font-size: 0.875rem;
+}
+
+.app-table thead {
+  background-color: rgb(var(--c-surface-container-low));
+  border-bottom: 1px solid rgb(var(--c-outline-variant) / 0.5);
+}
+
+.app-table th {
+  height: 2.75rem;
+  padding: 0.625rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgb(var(--c-on-surface-variant));
+  font-family: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+}
+
+.app-table tbody tr {
+  border-bottom: 1px solid rgb(var(--c-outline-variant) / 0.3);
+  transition: background-color 0.15s ease;
+}
+
+.app-table tbody tr:hover {
+  background-color: rgb(var(--c-surface-variant) / 0.4);
+}
+
+.app-table td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+  color: rgb(var(--c-on-surface));
+}
+
+/* ============ MICRO-INTERACTIONS ============ */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+::selection {
+  background-color: rgb(var(--c-primary-fixed) / 0.5);
+  color: rgb(var(--c-on-primary-container));
+}
+
+/* ============ SCROLLBAR EMAS ============ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--c-primary-light)) rgb(var(--c-surface-container-low));
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgb(var(--c-surface-container-low));
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--c-primary-light));
+  border-radius: 9999px;
+  border: 1px solid rgb(var(--c-surface-container-low));
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--c-primary-dark));
+}
+
+/* ============ STICKY SITE HEADER ============ */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 50;
   width: 100%;
-}
-
-:root .site-header,
-.light .site-header {
-  background-color: rgba(255, 255, 255, 0.88) !important;
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  background: rgb(var(--c-surface) / 0.9) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgb(var(--c-outline-variant) / 0.5) !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dark .site-header {
-  background-color: rgba(0, 0, 0, 0.82) !important;
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  background: rgb(var(--c-surface) / 0.88) !important;
+  border-bottom: 1px solid rgb(var(--c-outline-variant) / 0.35) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
 }
 
-/* Fallback if browser doesn't support backdrop blur */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :root .site-header,
-  .light .site-header {
-    background-color: #ffffff !important;
-  }
-  .dark .site-header {
-    background-color: #000000 !important;
-  }
-}
-
-/* MODAL CARD: 100% SOLID BACKGROUND (ANTI GELAP / ANTI TRANSPARAN) */
+/* ============ MODAL & SIDEBAR PANELS ============ */
 .modal-panel {
   background-color: rgb(var(--c-surface)) !important;
   color: rgb(var(--c-on-surface)) !important;
-  border: 1px solid rgb(var(--c-outline-variant)) !important;
+  border: 1px solid rgb(var(--c-outline-variant) / 0.6) !important;
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.15);
 }
 
-/* Light: shadow lembut warm */
-:root .modal-panel,
-.light .modal-panel {
-  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
-}
-
-/* Dark: shadow gelap dalam + subtle ring */
 .dark .modal-panel {
-  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06) !important;
+  background-color: rgb(var(--c-surface-container)) !important;
+  border-color: rgb(var(--c-outline-variant) / 0.4) !important;
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.7);
 }
 
-/* SIDEBAR PANEL: Shadow-only, tanpa border kaku */
 .sidebar-panel {
   background-color: rgb(var(--c-surface)) !important;
   color: rgb(var(--c-on-surface)) !important;
-  opacity: 1 !important;
+  border-right: 1px solid rgb(var(--c-outline-variant) / 0.4);
 }
 
-/* Light sidebar: shadow tipis ke kanan */
-:root .sidebar-panel,
-.light .sidebar-panel {
-  box-shadow: 1px 0 0 0 rgba(0, 0, 0, 0.06) !important;
-  border-right: none !important;
-}
-
-/* Dark sidebar: hairline putih sangat transparan */
 .dark .sidebar-panel {
-  box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.05) !important;
-  border-right: none !important;
-}
-
-/* CARD UTILITY: Shadow-first, border minimal */
-.card-surface {
-  background-color: rgb(var(--c-surface));
-  border-radius: 0.75rem; /* rounded-xl */
-}
-
-:root .card-surface,
-.light .card-surface {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  outline: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.dark .card-surface {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  outline: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* CUSTOM SCROLLBAR */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgb(var(--c-outline));
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--c-on-surface-variant));
+  background-color: rgb(var(--c-surface-container-low)) !important;
+  border-right: 1px solid rgb(var(--c-outline-variant) / 0.3);
 }

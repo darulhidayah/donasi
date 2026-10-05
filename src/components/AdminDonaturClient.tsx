@@ -52,10 +52,12 @@ export default function AdminDonaturClient({
   initialList,
   paidDonaturIds = [],
   adminNama,
+  minimalDonasi = 50000,
 }: {
   initialList: Donatur[];
   paidDonaturIds?: number[];
   adminNama: string;
+  minimalDonasi?: number;
 }) {
   const [list, setList] = useState<Donatur[]>(initialList);
   const [search, setSearch] = useState("");
@@ -113,7 +115,7 @@ export default function AdminDonaturClient({
   const [form, setForm] = useState({
     nama: "",
     no_hp: "",
-    minimal_bulanan: 50000,
+    minimal_bulanan: minimalDonasi,
     metode_default: "Transfer" as Donatur["metode_default"],
     catatan: "",
     tgl_daftar: new Date().toISOString().split("T")[0],
@@ -132,7 +134,7 @@ export default function AdminDonaturClient({
     setForm({
       nama: "",
       no_hp: "",
-      minimal_bulanan: 50000,
+      minimal_bulanan: minimalDonasi,
       metode_default: "Transfer",
       catatan: "",
       tgl_daftar: new Date().toISOString().split("T")[0],
@@ -160,8 +162,8 @@ export default function AdminDonaturClient({
       setError("Nama donatur wajib diisi.");
       return;
     }
-    if (form.minimal_bulanan < 50000) {
-      setError("Minimal donasi Rp 50.000.");
+    if (form.minimal_bulanan < minimalDonasi) {
+      setError(`Minimal donasi ${formatRupiah(minimalDonasi)}.`);
       return;
     }
     setError(null);
@@ -316,7 +318,7 @@ export default function AdminDonaturClient({
             "Donasi",
             "minimal_bulanan"
           );
-          const minNominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || 50000;
+          const minNominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || minimalDonasi;
 
           let rawMetode = getExcelValue(r, "Metode Pembayaran", "Metode", "Cara Bayar", "metode_default");
           let metode: Donatur["metode_default"] = "Transfer";
@@ -333,7 +335,7 @@ export default function AdminDonaturClient({
           return {
             nama: nama.trim(),
             no_hp: noHp,
-            minimal_bulanan: Math.max(50000, minNominal),
+            minimal_bulanan: Math.max(minimalDonasi, minNominal),
             metode_default: metode,
             catatan: catatan ? catatan.trim() : null,
             status: status as Donatur["status"],
@@ -498,7 +500,7 @@ export default function AdminDonaturClient({
                           href={`https://wa.me/${d.no_hp.replace(/[^0-9]/g, "")}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline flex items-center gap-1"
+                          className="hover:text-primary-dark dark:hover:text-primary hover:underline flex items-center gap-1"
                           title="Hubungi via WhatsApp"
                         >
                           <span>{d.no_hp}</span>
@@ -519,7 +521,7 @@ export default function AdminDonaturClient({
                             ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20"
                             : d.metode_default === "QRIS"
                             ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
-                            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                            : "bg-status-success/10 text-status-success border border-status-success/20"
                         )}
                       >
                         {d.metode_default === "Transfer" ? (
@@ -540,7 +542,7 @@ export default function AdminDonaturClient({
                         className={cn(
                           "inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-2.5 py-1 text-xs font-semibold transition-all border shadow-2xs hover:scale-105 active:scale-95 cursor-pointer",
                           d.status === "aktif"
-                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
+                            ? "bg-status-success/10 text-status-success border-status-success/30 hover:bg-status-success/20"
                             : "bg-surface-container-high text-on-surface-variant border-outline-variant hover:bg-surface-container-highest"
                         )}
                         title={`Klik untuk switch status menjadi ${d.status === "aktif" ? "Nonaktif" : "Aktif"}`}
@@ -549,7 +551,7 @@ export default function AdminDonaturClient({
                           className={cn(
                             "h-4 w-4 rounded-full flex items-center justify-center transition-colors shadow-2xs",
                             d.status === "aktif"
-                              ? "bg-emerald-600 text-white"
+                              ? "bg-status-success text-white"
                               : "bg-on-surface-variant/40 text-surface"
                           )}
                         >
@@ -732,8 +734,8 @@ export default function AdminDonaturClient({
                       setForm((f) => ({ ...f, minimal_bulanan: parseInt(e.target.value) || 0 }))
                     }
                     type="number"
-                    min={50000}
-                    step={50000}
+                    min={minimalDonasi}
+                    step={minimalDonasi}
                     className={inputCls}
                   />
                 </div>
@@ -918,7 +920,7 @@ export default function AdminDonaturClient({
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-2.5 py-0.5 text-[11px] font-semibold transition-all border shadow-2xs",
                       detailDonatur.status === "aktif"
-                        ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                        ? "bg-status-success/10 text-status-success border-status-success/30"
                         : "bg-surface-container-high text-on-surface-variant border-outline-variant"
                     )}
                     title="Klik untuk mengubah status aktif/nonaktif"
@@ -926,7 +928,7 @@ export default function AdminDonaturClient({
                     <span
                       className={cn(
                         "h-3.5 w-3.5 rounded-full flex items-center justify-center text-white",
-                        detailDonatur.status === "aktif" ? "bg-emerald-600" : "bg-neutral-500"
+                        detailDonatur.status === "aktif" ? "bg-status-success" : "bg-neutral-500"
                       )}
                     >
                       {detailDonatur.status === "aktif" ? (
@@ -945,7 +947,7 @@ export default function AdminDonaturClient({
                       href={`https://wa.me/${detailDonatur.no_hp.replace(/[^0-9]/g, "")}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:underline font-mono"
+                      className="flex items-center gap-1 text-primary-dark dark:text-primary hover:underline font-mono"
                     >
                       <span>{detailDonatur.no_hp}</span>
                       <ExternalLink className="h-3 w-3" />
@@ -1004,7 +1006,7 @@ export default function AdminDonaturClient({
                         <p className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">
                           Kepatuhan Bulanan
                         </p>
-                        <p className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+                        <p className="font-mono text-base font-bold text-primary-dark dark:text-primary tabular-nums mt-0.5">
                           {lunasBulanCount} / {bulanList.length} Bulan
                         </p>
                         <p className="text-[11px] text-on-surface-variant mt-0.5">
@@ -1019,7 +1021,7 @@ export default function AdminDonaturClient({
                           Status Tunggakan
                         </p>
                         {tunggakanCount === 0 ? (
-                          <div className="flex items-center gap-1.5 mt-1 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                          <div className="flex items-center gap-1.5 mt-1 text-status-success font-bold text-sm">
                             <CheckCircle2 className="h-4 w-4" />
                             <span>Lunas Semua Bulan</span>
                           </div>
@@ -1039,7 +1041,7 @@ export default function AdminDonaturClient({
                     {/* Timeline Rincian Per Bulan */}
                     <div>
                       <div className="flex items-center justify-between mb-2.5">
-                        <h3 className="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5">
+                        <h3 className="text-xs font-bold text-on-surface uppercase tracking-wider flex items-center gap-1.5 font-label">
                           <History className="h-4 w-4 text-primary" />
                           <span>Rincian Pembayaran Per Bulan (Sejak Bergabung)</span>
                         </h3>
@@ -1072,7 +1074,7 @@ export default function AdminDonaturClient({
                               className={cn(
                                 "rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-colors",
                                 isLunas
-                                  ? "border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/30"
+                                  ? "border-status-success/20 bg-status-success/5 hover:border-status-success/30"
                                   : "border-outline-variant bg-surface-container-low/50 hover:border-outline"
                               )}
                             >
@@ -1081,7 +1083,7 @@ export default function AdminDonaturClient({
                                   className={cn(
                                     "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
                                     isLunas
-                                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                      ? "bg-status-success/10 text-status-success"
                                       : "bg-surface-container-high text-on-surface-variant"
                                   )}
                                 >
@@ -1098,7 +1100,7 @@ export default function AdminDonaturClient({
                                       {formatBulan(bulan)}
                                     </span>
                                     {isLunas ? (
-                                      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold bg-status-success/15 text-status-success">
                                         Lunas
                                       </span>
                                     ) : (
@@ -1147,7 +1149,7 @@ export default function AdminDonaturClient({
                                         href={`https://wa.me/${cleanHp}?text=${waText}`}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 dark:text-emerald-300 transition-colors"
+                                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold bg-primary/10 hover:bg-primary/20 text-primary-dark dark:text-primary transition-colors"
                                         title="Kirim pengingat donasi ramah via WhatsApp"
                                       >
                                         <span>Kirim WA</span>

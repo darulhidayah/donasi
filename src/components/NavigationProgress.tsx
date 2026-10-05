@@ -116,7 +116,7 @@ function ProgressContent() {
     >
       {/* Loading Progress Bar */}
       <div
-        className="h-[2.5px] bg-gradient-to-r from-emerald-600 via-teal-400 to-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.7)] transition-all ease-out"
+        className="h-[2.5px] bg-gradient-to-r from-primary via-primary-light to-primary-fixed shadow-[0_0_12px_rgba(233,195,73,0.7)] transition-all ease-out"
         style={{
           width: `${progress}%`,
           transitionDuration: progress === 100 ? "150ms" : "250ms",

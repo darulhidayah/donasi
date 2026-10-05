@@ -8,7 +8,7 @@ import {
   Plus, Pencil, Trash2, Building2, CheckCircle2, Clock, X,
   AlertCircle, User, ShieldAlert, Receipt, Upload, Eye,
   ExternalLink, FileText, Check, ArrowUpRight, DollarSign,
-  Maximize2, Download, MoreVertical
+  Maximize2, Download, MoreVertical, Wallet
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 
@@ -448,13 +448,13 @@ export default function AdminHutangClient({
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={() => openBayarModal()}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 dark:bg-emerald-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-colors shadow-sm"
+            className="flex items-center gap-2 rounded-xl bg-primary-container px-4 py-2.5 text-xs font-semibold text-on-primary-container hover:brightness-110 transition-all shadow-soft active:scale-95 font-label"
           >
             <Receipt className="h-4 w-4" /> Catat Pembayaran / Kwitansi
           </button>
           <button
             onClick={openAdd}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-on-primary hover:bg-primary/90 transition-colors shadow-sm"
+            className="flex items-center gap-2 rounded-xl border border-primary/40 bg-surface px-4 py-2.5 text-xs font-semibold text-primary-dark dark:text-primary hover:bg-primary/10 transition-all shadow-2xs active:scale-95 font-label"
           >
             <Plus className="h-4 w-4" /> Tambah Sumber Hutang
           </button>
@@ -463,9 +463,9 @@ export default function AdminHutangClient({
 
       {/* Success Notification */}
       {successMsg && (
-        <div className="flex items-center justify-between rounded-xl bg-emerald-500/15 border border-emerald-500/30 p-4 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+        <div className="flex items-center justify-between rounded-xl bg-status-success/15 border border-status-success/30 p-4 text-xs font-medium text-status-success">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-5 w-5 text-status-success shrink-0" />
             <span>{successMsg}</span>
           </div>
           <button onClick={() => setSuccessMsg(null)} className="p-1 hover:opacity-75">
@@ -474,52 +474,48 @@ export default function AdminHutangClient({
         </div>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5 border-t-2 border-t-primary/60">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-              Total Kewajiban Hutang
-            </p>
-            <Building2 className="h-5 w-5 text-primary/70" />
-          </div>
-          <p className="font-mono text-2xl font-black text-on-surface tabular-nums">
-            {formatRupiah(totalHutang)}
-          </p>
-          <p className="text-[11px] text-on-surface-variant mt-1.5">{list.length} Pihak Kreditor / Toko</p>
-        </div>
-
-        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5 border-t-2 border-t-status-success/50">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-              Telah Disalurkan / Terbayar
-            </p>
-            <Receipt className="h-5 w-5 text-status-success/70" />
-          </div>
-          <p className="font-mono text-2xl font-black text-status-success tabular-nums">
-            {formatRupiah(totalTerbayar)}
-          </p>
-          <p className="text-[11px] text-on-surface-variant mt-1.5">
-            {pembayaranList.length} Transaksi Pembayaran / Kwitansi
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-surface shadow-sm ring-1 ring-black/[0.05] dark:ring-white/[0.06] p-5 border-t-2 border-t-status-danger/50">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-              Sisa Kewajiban Hutang
-            </p>
-            <Clock className="h-5 w-5 text-status-danger/70" />
-          </div>
-          <p className="font-mono text-2xl font-black text-status-danger tabular-nums">
-            {formatRupiah(totalSisa)}
-          </p>
-          <p className="text-[11px] text-on-surface-variant mt-1.5">
-            {totalHutang > 0
+      {/* Summary Cards (Sama Style dengan Dashboard Admin) */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 stagger-children">
+        <StatCard
+          icon={<Building2 className="h-5 w-5" />}
+          watermark={<Building2 className="h-12 w-12" />}
+          label="Total Kewajiban"
+          value={formatRupiah(totalHutang)}
+          sub={`${list.length} Pihak Kreditor / Toko`}
+          theme="primary"
+        />
+        <StatCard
+          icon={<Receipt className="h-5 w-5" />}
+          watermark={<Receipt className="h-12 w-12" />}
+          label="Telah Disalurkan"
+          value={formatRupiah(totalTerbayar)}
+          sub={`${pembayaranList.length} Transaksi Kwitansi`}
+          theme="success"
+        />
+        <StatCard
+          icon={<Clock className="h-5 w-5" />}
+          watermark={<Clock className="h-12 w-12" />}
+          label="Sisa Kewajiban"
+          value={formatRupiah(totalSisa)}
+          sub={
+            totalHutang > 0
               ? `${formatPersen(totalTerbayar, totalHutang)} Terlunasi`
-              : "0%"}
-          </p>
-        </div>
+              : "0%"
+          }
+          theme="danger"
+        />
+        <StatCard
+          icon={<Wallet className="h-5 w-5" />}
+          watermark={<Wallet className="h-12 w-12" />}
+          label="Saldo Kas Standby"
+          value={formatRupiah(saldoKasSaatIni)}
+          sub={
+            totalDonasiTerkumpul > 0
+              ? `Dari ${formatRupiah(totalDonasiTerkumpul)} donasi`
+              : "Kas pelunasan"
+          }
+          theme="gold"
+        />
       </div>
 
       {/* Main Table: Sumber Hutang & Action Bar */}
@@ -612,7 +608,7 @@ export default function AdminHutangClient({
                             className={cn(
                               "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold capitalize",
                               statusFinal === "lunas"
-                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                ? "bg-status-success/15 text-status-success border border-status-success/20"
                                 : statusFinal === "sebagian"
                                 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
                                 : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20"
@@ -633,7 +629,7 @@ export default function AdminHutangClient({
                               className={cn(
                                 "h-full transition-all duration-300",
                                 statusFinal === "lunas"
-                                  ? "bg-emerald-500"
+                                  ? "bg-status-success"
                                   : statusFinal === "sebagian"
                                   ? "bg-amber-500"
                                   : "bg-rose-500"
@@ -649,7 +645,7 @@ export default function AdminHutangClient({
                           className={cn(
                             "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors",
                             itemBayarList.length > 0
-                              ? "bg-primary/10 text-primary hover:bg-primary/20"
+                              ? "bg-primary/10 text-primary-dark dark:text-primary hover:bg-primary/20"
                               : "bg-surface-container text-on-surface-variant hover:text-on-surface"
                           )}
                           title="Lihat rincian pembayaran dan kwitansi"
@@ -663,7 +659,7 @@ export default function AdminHutangClient({
                           {sisa > 0 && (
                             <button
                               onClick={() => openBayarModal(item)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 text-xs font-semibold shadow-xs transition-colors"
+                              className="inline-flex items-center gap-1 rounded-xl bg-primary-container text-on-primary-container hover:brightness-110 px-3 py-1.5 text-xs font-semibold shadow-soft transition-all active:scale-95 font-label"
                               title="Bayar cicilan ke toko ini"
                             >
                               <DollarSign className="h-3.5 w-3.5" />
@@ -774,12 +770,12 @@ export default function AdminHutangClient({
           <div className="relative z-10 w-full max-w-lg rounded-2xl modal-panel p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4 border-b border-outline-variant pb-3">
               <div>
-                <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                  <Receipt className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 font-headline">
+                  <Receipt className="h-5 w-5 text-primary-dark dark:text-primary" />
                   <span>Bayar Hutang & Upload Kwitansi</span>
                 </h2>
-                <p className="text-[11px] text-on-surface-variant">
-                  Penanggung jawab: <strong className="text-primary">{adminNama}</strong>
+                <p className="text-[11px] text-on-surface-variant font-body">
+                  Penanggung jawab: <strong className="text-primary-dark dark:text-primary">{adminNama}</strong>
                 </p>
               </div>
               <button
@@ -795,7 +791,7 @@ export default function AdminHutangClient({
             {/* Panel Ringkasan Akumulasi & Saldo Kas Real */}
             <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-low p-3.5 space-y-2.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-on-surface-variant flex items-center gap-1.5">
+                <span className="text-on-surface-variant flex items-center gap-1.5 font-label">
                   <span className="h-2 w-2 rounded-full bg-primary" />
                   Akumulasi Donasi Terkumpul (All-Time):
                 </span>
@@ -804,7 +800,7 @@ export default function AdminHutangClient({
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-on-surface-variant flex items-center gap-1.5">
+                <span className="text-on-surface-variant flex items-center gap-1.5 font-label">
                   <span className="h-2 w-2 rounded-full bg-amber-500" />
                   Total Setoran Hutang Sebelumnya:
                 </span>
@@ -813,11 +809,11 @@ export default function AdminHutangClient({
                 </span>
               </div>
               <div className="pt-2 border-t border-outline-variant flex items-center justify-between">
-                <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold text-on-surface flex items-center gap-1.5 font-label">
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
                   Saldo Kas Riil Saat Ini (Batas Maks. Bayar):
                 </span>
-                <span className="font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400 tabular-nums">
+                <span className="font-mono font-extrabold text-sm text-primary-dark dark:text-primary tabular-nums">
                   {formatRupiah(saldoKasSaatIni)}
                 </span>
               </div>
@@ -911,8 +907,8 @@ export default function AdminHutangClient({
                   <label className="block text-xs font-semibold text-on-surface uppercase tracking-wider">
                     Nominal Pembayaran (Rp) *
                   </label>
-                  <span className="text-[11px] font-medium text-on-surface-variant">
-                    Maks. Saldo: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{formatRupiah(saldoKasSaatIni)}</strong>
+                  <span className="text-[11px] font-medium text-on-surface-variant font-label">
+                    Maks. Saldo: <strong className="text-primary-dark dark:text-primary font-mono">{formatRupiah(saldoKasSaatIni)}</strong>
                   </span>
                 </div>
                 <div className="relative">
@@ -960,7 +956,7 @@ export default function AdminHutangClient({
                                   nominal: Math.min(saldoKasSaatIni, sisa),
                                 }))
                               }
-                              className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold transition-colors"
+                              className="px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary-dark dark:text-primary text-[11px] font-bold transition-colors font-label"
                               title="Set nominal maksimal sesuai saldo kas riil"
                             >
                               Gunakan Saldo Kas Real ({formatRupiah(Math.min(saldoKasSaatIni, sisa))})
@@ -1122,11 +1118,11 @@ export default function AdminHutangClient({
                   bayarForm.nominal > saldoKasSaatIni ||
                   saldoKasSaatIni <= 0
                 }
-                className="flex-1 rounded-xl bg-emerald-600 dark:bg-emerald-700 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+                className="flex-1 rounded-xl bg-primary-container text-on-primary-container py-2.5 text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all shadow-soft flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed font-label active:scale-95"
               >
                 {uploadProgress ? (
                   <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     <span>Mengunggah & Menyimpan...</span>
                   </>
                 ) : (
@@ -1209,7 +1205,7 @@ export default function AdminHutangClient({
                         setRiwayatModalOpen(false);
                         openBayarModal(selectedHutangForRiwayat);
                       }}
-                      className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold"
+                      className="mt-3 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-container text-on-primary-container text-xs font-semibold hover:brightness-110 shadow-soft transition-all active:scale-95 font-label"
                     >
                       <Plus className="h-4 w-4" /> Catat Pembayaran Pertama
                     </button>
@@ -1225,7 +1221,7 @@ export default function AdminHutangClient({
                       className="rounded-xl border border-outline-variant bg-surface p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-primary/50 transition-colors"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="h-9 w-9 rounded-lg bg-status-success/10 text-status-success flex items-center justify-center shrink-0 mt-0.5">
                           <Check className="h-5 w-5" />
                         </div>
                         <div>
@@ -1309,7 +1305,7 @@ export default function AdminHutangClient({
                   setRiwayatModalOpen(false);
                   openBayarModal(selectedHutangForRiwayat);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 text-white px-3.5 py-2 text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-xs"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary-container text-on-primary-container px-4 py-2 text-xs font-semibold hover:brightness-110 transition-all shadow-soft active:scale-95 font-label"
               >
                 <Plus className="h-4 w-4" /> Tambah Pembayaran Baru
               </button>
@@ -1588,3 +1584,57 @@ export default function AdminHutangClient({
 
 const inputCls =
   "w-full rounded-xl border border-outline-variant bg-surface px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-all";
+
+function StatCard({
+  icon,
+  watermark,
+  label,
+  value,
+  sub,
+  theme = "primary",
+}: {
+  icon: React.ReactNode;
+  watermark?: React.ReactNode;
+  label: string;
+  value: string;
+  sub?: string;
+  theme?: "primary" | "success" | "danger" | "gold";
+}) {
+  const chipClass =
+    theme === "success"
+      ? "bg-status-success/10 text-status-success"
+      : theme === "danger"
+      ? "bg-status-danger/10 text-status-danger"
+      : theme === "gold"
+      ? "bg-primary-container text-on-primary-container"
+      : "bg-primary/10 text-primary-dark dark:text-primary";
+
+  const watermarkClass =
+    theme === "success"
+      ? "text-status-success"
+      : theme === "danger"
+      ? "text-status-danger"
+      : theme === "gold"
+      ? "text-primary-light"
+      : "text-primary";
+
+  return (
+    <div className="bento-card bg-white dark:bg-surface border border-outline-variant/60 overflow-hidden group hover-lift relative p-5 shadow-soft">
+      {watermark && (
+        <div className={`absolute right-3 top-3 opacity-15 pointer-events-none ${watermarkClass}`}>
+          {watermark}
+        </div>
+      )}
+      <span className={`flex h-9 w-9 items-center justify-center rounded-xl mb-3 shadow-2xs ${chipClass}`}>
+        {icon}
+      </span>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant font-label">
+        {label}
+      </p>
+      <p className="font-headline text-lg md:text-xl font-bold text-on-surface mt-1 tabular-nums leading-tight tracking-tight truncate">
+        {value}
+      </p>
+      {sub && <p className="text-[11px] text-on-surface-variant/70 mt-1">{sub}</p>}
+    </div>
+  );
+}
