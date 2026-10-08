@@ -7,6 +7,7 @@ import {
   exportPembayaranToExcel,
   downloadTemplatePembayaranExcel,
   readExcelFile,
+  parseExcelClipboard,
   getExcelValue,
   cleanPhoneNumber,
 } from "@/lib/excel";
@@ -15,6 +16,7 @@ import {
   Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight,
   Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle2,
   CreditCard, QrCode, Banknote, User, ArrowUpDown, ArrowUp, ArrowDown,
+  ClipboardPaste,
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 
@@ -46,6 +48,8 @@ export default function AdminPembayaranClient({
   const [loadingBulan, setLoadingBulan] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importMode, setImportMode] = useState<"file" | "paste">("file");
+  const [pasteText, setPasteText] = useState("");
   const [editing, setEditing] = useState<Pembayaran | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Pembayaran | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -223,22 +227,17 @@ export default function AdminPembayaranClient({
     });
   };
 
-  // Handler Import Pembayaran Excel
-  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Proses Rincian Pembayaran (Dipakai oleh Upload File maupun Copy-Paste)
+  const processPembayaranRows = async (rows: Record<string, any>[]) => {
+    if (!rows || rows.length === 0) {
+      setError("Data kosong atau format tidak sesuai.");
+      setImportStatus(null);
+      return;
+    }
 
-    setImportStatus("Membaca file Excel...");
+    setImportStatus(`Memvalidasi ${rows.length} baris data...`);
+
     try {
-      const rows = await readExcelFile<any>(file);
-      if (!rows || rows.length === 0) {
-        setError("File Excel kosong.");
-        setImportStatus(null);
-        return;
-      }
-
-      setImportStatus(`Memvalidasi ${rows.length} baris data...`);
-
       const payload = [];
       const { data: userData } = await supabase.auth.getUser();
 
@@ -349,11 +348,42 @@ export default function AdminPembayaranClient({
       setTimeout(() => {
         setImportModalOpen(false);
         setImportStatus(null);
+        setPasteText("");
       }, 2000);
+    } catch (err: any) {
+      setError("Gagal memproses data: " + err.message);
+      setImportStatus(null);
+    }
+  };
+
+  // Handler Upload File Excel
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportStatus("Membaca file Excel...");
+    try {
+      const rows = await readExcelFile<any>(file);
+      await processPembayaranRows(rows);
     } catch (err: any) {
       setError("Format file tidak didukung: " + err.message);
       setImportStatus(null);
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  // Handler Submit Paste Excel
+  const handlePasteSubmit = async () => {
+    if (!pasteText.trim()) return;
+    const rows = parseExcelClipboard(pasteText, [
+      "ID",
+      "Nama Donatur",
+      "Nilai Donasi (Rp)",
+      "Metode Pembayaran",
+      "Keterangan",
+    ]);
+    await processPembayaranRows(rows);
   };
 
   const totalBulanIni = pembayaran.reduce((s, p) => s + p.nominal, 0);
@@ -872,40 +902,174 @@ export default function AdminPembayaranClient({
               </div>
             )}
 
-            <div className="space-y-4">
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-2xl p-6 text-center cursor-pointer hover:border-primary transition-colors bg-surface-container-low"
+            {/* Tab Navigasi Mode Import */}
+            <div className="flex rounded-xl border border-outline-variant p-1 bg-surface-container mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setImportMode("file");
+                  setError(null);
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+                  importMode === "file"
+                    ? "bg-surface text-primary shadow-2xs font-bold"
+                    : "text-on-surface-variant hover:text-on-surface"
+                )}
               >
-                <Upload className="h-8 w-8 text-primary mb-2" />
-                <p className="text-sm font-semibold text-on-surface">Pilih File Excel Rincian</p>
-                <p className="text-[11px] text-on-surface-variant mt-1">Format .xlsx atau .xls</p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx, .xls"
-                  onChange={handleImportExcel}
-                  className="hidden"
-                />
-              </div>
-
-              {/* Download Template Format Excel */}
-              <div className="flex items-center justify-between rounded-xl bg-surface-container p-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-on-surface">Belum punya formatnya?</p>
-                  <p className="text-[11px] text-on-surface-variant">
-                    Unduh file template Excel resmi
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={downloadTemplatePembayaranExcel}
-                  className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface px-2.5 py-1 text-xs font-semibold text-primary hover:bg-surface-container-high transition-colors cursor-pointer"
-                >
-                  <Download className="h-3 w-3" /> Unduh
-                </button>
-              </div>
+                <Upload className="h-3.5 w-3.5" />
+                <span>Upload File (.xlsx)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setImportMode("paste");
+                  setError(null);
+                }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+                  importMode === "paste"
+                    ? "bg-surface text-primary shadow-2xs font-bold"
+                    : "text-on-surface-variant hover:text-on-surface"
+                )}
+              >
+                <ClipboardPaste className="h-3.5 w-3.5" />
+                <span>Copy-Paste Excel</span>
+              </button>
             </div>
+
+            {importMode === "file" ? (
+              <div className="space-y-4">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-2xl p-6 text-center cursor-pointer hover:border-primary transition-colors bg-surface-container-low"
+                >
+                  <Upload className="h-8 w-8 text-primary mb-2" />
+                  <p className="text-sm font-semibold text-on-surface">Pilih File Excel Rincian</p>
+                  <p className="text-[11px] text-on-surface-variant mt-1">Format .xlsx atau .xls</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={handleImportExcel}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Download Template Format Excel */}
+                <div className="flex items-center justify-between rounded-xl bg-surface-container p-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-on-surface">Belum punya formatnya?</p>
+                    <p className="text-[11px] text-on-surface-variant">
+                      Unduh file template Excel resmi
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={downloadTemplatePembayaranExcel}
+                    className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface px-2.5 py-1 text-xs font-semibold text-primary hover:bg-surface-container-high transition-colors cursor-pointer"
+                  >
+                    <Download className="h-3 w-3" /> Unduh
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-on-surface">
+                      Tempel (Ctrl+V) Baris Data dari Excel:
+                    </label>
+                    <span className="text-[10px] text-on-surface-variant">
+                      ID | Nama | Nilai Donasi | Metode | Ket
+                    </span>
+                  </div>
+                  <textarea
+                    value={pasteText}
+                    onChange={(e) => {
+                      setPasteText(e.target.value);
+                      setError(null);
+                    }}
+                    rows={6}
+                    placeholder={"Contoh:\n1\tIsmail Marzuki\t100000\tTransfer\tInfaq\n2\tCak War\t50000\tQRIS\t\n\n(Tinggal blok di Excel, Ctrl+C lalu Ctrl+V di sini)"}
+                    className="w-full font-mono text-xs rounded-xl border border-outline-variant bg-surface-container-low p-3 text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-y"
+                  />
+                </div>
+
+                {/* Live Preview Baris Data yang Terdeteksi */}
+                {(() => {
+                  const previewRows = pasteText.trim()
+                    ? parseExcelClipboard(pasteText, [
+                        "ID",
+                        "Nama Donatur",
+                        "Nilai Donasi (Rp)",
+                        "Metode Pembayaran",
+                        "Keterangan",
+                      ])
+                    : [];
+
+                  if (!pasteText.trim()) return null;
+
+                  return (
+                    <div className="rounded-xl bg-surface-container p-3 space-y-2 border border-outline-variant">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-primary flex items-center gap-1">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Terdeteksi {previewRows.length} baris data
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPasteText("")}
+                          className="text-xs text-rose-500 hover:underline cursor-pointer"
+                        >
+                          Bersihkan
+                        </button>
+                      </div>
+
+                      {previewRows.length > 0 && (
+                        <div className="text-[11px] text-on-surface-variant space-y-1">
+                          <p className="font-medium text-on-surface">Contoh baris terdeteksi:</p>
+                          <div className="rounded-lg bg-surface p-2 border border-outline-variant space-y-1 max-h-24 overflow-y-auto">
+                            {previewRows.slice(0, 3).map((r, idx) => {
+                              const idVal = getExcelValue(r, "ID", "ID Donatur", "id_donatur", "No ID", "Kode Donatur");
+                              const namaVal = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur");
+                              const nomVal = getExcelValue(r, "Nilai Donasi (Rp)", "Nilai Donasi", "Nominal", "Jumlah", "Donasi");
+                              const metVal = getExcelValue(r, "Metode Pembayaran", "Metode", "Cara Bayar") || "Default";
+                              const numClean = nomVal.replace(/[^0-9]/g, "");
+
+                              return (
+                                <div key={idx} className="truncate text-[11px] font-sans">
+                                  <span className="font-mono font-bold text-primary">#{idVal || "?"}</span> {namaVal || "Tanpa Nama"} —{" "}
+                                  <span className="font-semibold text-on-surface">
+                                    {numClean ? formatRupiah(parseInt(numClean)) : "Rp 0 (Abaikan)"}
+                                  </span>{" "}
+                                  <span className="text-[10px] opacity-75">({metVal})</span>
+                                </div>
+                              );
+                            })}
+                            {previewRows.length > 3 && (
+                              <div className="text-[10px] text-on-surface-variant/60 italic pt-0.5">
+                                ...dan {previewRows.length - 3} baris lainnya
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={handlePasteSubmit}
+                        disabled={previewRows.length === 0}
+                        className="w-full mt-2 rounded-xl bg-primary py-2.5 text-xs font-semibold text-on-primary hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <ClipboardPaste className="h-4 w-4" />
+                        <span>Proses & Simpan {previewRows.length > 0 ? `(${previewRows.length} Baris)` : ""}</span>
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             <div className="mt-6 pt-3 border-t border-outline-variant">
               <button

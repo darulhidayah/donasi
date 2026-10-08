@@ -236,3 +236,72 @@ export function cleanPhoneNumber(raw: any): string | null {
 
   return str;
 }
+
+/**
+ * Parsing teks yang di-copy langsung dari clipboard Microsoft Excel atau Google Sheets (format TSV)
+ * Otomatis mendeteksi header atau menggunakan default kolom jika tanpa header.
+ */
+export function parseExcelClipboard(
+  rawText: string,
+  defaultColumns: string[]
+): Record<string, string>[] {
+  if (!rawText || !rawText.trim()) return [];
+
+  // Pisahkan berdasarkan baris baru
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) return [];
+
+  const splitCells = (line: string) =>
+    line.split("\t").map((c) => c.trim().replace(/^["']|["']$/g, ""));
+
+  const firstLineCells = splitCells(lines[0]);
+
+  // Deteksi apakah baris pertama adalah judul kolom / header
+  const headerKeywords = [
+    "id", "no", "nama", "nilai", "nominal", "jumlah", "donasi",
+    "metode", "keterangan", "catatan", "hp", "telepon", "wa"
+  ];
+  const looksLikeHeader = firstLineCells.some((cell) =>
+    headerKeywords.some((kw) => cell.toLowerCase().includes(kw))
+  );
+
+  let headers: string[] = [];
+  let dataLines: string[] = [];
+
+  if (looksLikeHeader) {
+    headers = firstLineCells;
+    dataLines = lines.slice(1);
+  } else {
+    headers = defaultColumns;
+    dataLines = lines;
+  }
+
+  const result: Record<string, string>[] = [];
+
+  for (const line of dataLines) {
+    const cells = splitCells(line);
+    // Jika semua sel pada baris ini kosong, lewati
+    if (cells.every((c) => !c)) continue;
+
+    const rowObj: Record<string, string> = {};
+    headers.forEach((header, idx) => {
+      rowObj[header] = cells[idx] ?? "";
+    });
+
+    // Petakan juga ke defaultColumns berdasarkan urutan kolom
+    defaultColumns.forEach((col, idx) => {
+      if (!rowObj[col] && cells[idx] !== undefined) {
+        rowObj[col] = cells[idx];
+      }
+    });
+
+    result.push(rowObj);
+  }
+
+  return result;
+}
+
