@@ -127,6 +127,7 @@ export function downloadTemplatePembayaranExcel() {
       ID: 1,
       "Nama Donatur": "H. Ahmad Fauzi (Contoh)",
       "Nilai Donasi (Rp)": 100000,
+      "Tgl Bayar": "05/10/2026",
       "Metode Pembayaran": "Transfer",
       Keterangan: "Infaq pembangunan",
     },
@@ -134,6 +135,7 @@ export function downloadTemplatePembayaranExcel() {
       ID: 2,
       "Nama Donatur": "Ibu Siti Rahmah (Contoh)",
       "Nilai Donasi (Rp)": 50000,
+      "Tgl Bayar": "08/10/2026",
       "Metode Pembayaran": "QRIS",
       Keterangan: "",
     },
@@ -141,6 +143,7 @@ export function downloadTemplatePembayaranExcel() {
       ID: 3,
       "Nama Donatur": "Bapak Abdullah (Contoh)",
       "Nilai Donasi (Rp)": "",
+      "Tgl Bayar": "",
       "Metode Pembayaran": "Tunai",
       Keterangan: "Kosongkan nominal jika belum bayar (akan otomatis diabaikan)",
     },
@@ -304,4 +307,64 @@ export function parseExcelClipboard(
 
   return result;
 }
+
+/**
+ * Parsing tanggal dari input Excel/Clipboard secara fleksibel
+ * Mendukung format:
+ * - YYYY-MM-DD (2026-10-05)
+ * - DD/MM/YYYY atau DD-MM-YYYY (05/10/2026)
+ * - DD/MM/YY atau DD-MM-YY (05/10/26)
+ * - Angka hari saja 1..31 (misal "5" -> otomatis memakai tahun & bulan aktif)
+ * - Serial number tanggal Excel (contoh: 45200)
+ */
+export function parseExcelDate(val: any, fallbackDateStr: string): string {
+  if (!val) return fallbackDateStr;
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return val.toISOString().split("T")[0];
+  }
+  let str = String(val).trim();
+  if (!str) return fallbackDateStr;
+
+  // Jika user hanya menuliskan angka tanggal 1..31 (misal 5 atau 25)
+  if (/^\d{1,2}$/.test(str)) {
+    const day = parseInt(str);
+    if (day >= 1 && day <= 31 && fallbackDateStr.length >= 10) {
+      return fallbackDateStr.slice(0, 8) + String(day).padStart(2, "0");
+    }
+  }
+
+  // Serial number Excel (biasanya 5 digit untuk tahun 2010 - 2035)
+  if (/^\d{5}$/.test(str)) {
+    const num = parseInt(str);
+    const date = new Date(Math.round((num - 25569) * 86400 * 1000));
+    if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
+  }
+
+  // Format YYYY-MM-DD atau YYYY/MM/DD
+  if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(str)) {
+    const parts = str.split(/[-/]/);
+    return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+  }
+
+  // Format DD/MM/YYYY atau DD-MM-YYYY
+  if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(str)) {
+    const parts = str.split(/[-/]/);
+    return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  }
+
+  // Format DD/MM/YY atau DD-MM-YY
+  if (/^\d{1,2}[-/]\d{1,2}[-/]\d{2}$/.test(str)) {
+    const parts = str.split(/[-/]/);
+    const yr = "20" + parts[2];
+    return `${yr}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  }
+
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split("T")[0];
+  }
+
+  return fallbackDateStr;
+}
+
 

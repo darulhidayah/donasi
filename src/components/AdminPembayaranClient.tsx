@@ -8,6 +8,7 @@ import {
   downloadTemplatePembayaranExcel,
   readExcelFile,
   parseExcelClipboard,
+  parseExcelDate,
   getExcelValue,
   cleanPhoneNumber,
 } from "@/lib/excel";
@@ -295,6 +296,21 @@ export default function AdminPembayaranClient({
         const directKet = getExcelValue(r, "Keterangan", "Catatan", "Note");
         if (directKet) ket = directKet;
 
+        // Parsing Tanggal Bayar
+        const rawTgl = getExcelValue(
+          r,
+          "Tgl Bayar",
+          "Tanggal Bayar",
+          "Tgl",
+          "Tanggal",
+          "Tgl Transfer",
+          "Tanggal Transfer",
+          "tgl_bayar"
+        );
+        const todayStr = new Date().toISOString().split("T")[0];
+        const defaultTgl = todayStr.startsWith(bulanDB.slice(0, 7)) ? todayStr : bulanDB;
+        const tglBayar = parseExcelDate(rawTgl, defaultTgl);
+
         payload.push({
           donatur_id: donatur.id,
           nama_donatur: donatur.nama,
@@ -303,7 +319,7 @@ export default function AdminPembayaranClient({
           nominal,
           metode,
           keterangan: ket || null,
-          tgl_bayar: new Date().toISOString().split("T")[0],
+          tgl_bayar: tglBayar,
           dicatat_oleh: userData.user?.id,
           nama_pencatat: `${adminNama} (Import Excel)`,
           updated_by_name: `${adminNama} (Import Excel)`,
@@ -380,6 +396,7 @@ export default function AdminPembayaranClient({
       "ID",
       "Nama Donatur",
       "Nilai Donasi (Rp)",
+      "Tgl Bayar",
       "Metode Pembayaran",
       "Keterangan",
     ]);
@@ -879,9 +896,11 @@ export default function AdminPembayaranClient({
             <p className="text-xs text-on-surface-variant mb-4">
               Upload file Excel rincian pembayaran untuk periode <strong>{labelBulan}</strong>.
               <br />
-              Kolom template: <strong>ID</strong> (key utama), <strong>Nama Donatur</strong>, <strong>Nilai Donasi (Rp)</strong>, <strong>Metode Pembayaran</strong>, dan <strong>Keterangan</strong>.
+              Kolom template: <strong>ID</strong> (key utama), <strong>Nama Donatur</strong>, <strong>Nilai Donasi (Rp)</strong>, <strong>Tgl Bayar</strong> (opsional), <strong>Metode Pembayaran</strong>, dan <strong>Keterangan</strong>.
               <br />
               <span className="text-[11px] opacity-80">
+                • <strong>Tgl Bayar:</strong> opsional (bisa diisi tgl transaksi misal `05/10/2026` atau angka tanggalnya saja `5`).
+                <br />
                 • Baris tanpa nominal donasi akan <strong>diabaikan</strong>.
                 <br />
                 • ID donatur baru yang belum terdaftar akan <strong>ditolak</strong> (harus didaftarkan terlebih dahulu).
@@ -981,7 +1000,7 @@ export default function AdminPembayaranClient({
                       Tempel (Ctrl+V) Baris Data dari Excel:
                     </label>
                     <span className="text-[10px] text-on-surface-variant">
-                      ID | Nama | Nilai Donasi | Metode | Ket
+                      ID | Nama | Nilai Donasi | Tgl Bayar | Metode | Ket
                     </span>
                   </div>
                   <textarea
@@ -991,7 +1010,7 @@ export default function AdminPembayaranClient({
                       setError(null);
                     }}
                     rows={6}
-                    placeholder={"Contoh:\n1\tIsmail Marzuki\t100000\tTransfer\tInfaq\n2\tCak War\t50000\tQRIS\t\n\n(Tinggal blok di Excel, Ctrl+C lalu Ctrl+V di sini)"}
+                    placeholder={"Contoh:\n1\tIsmail Marzuki\t100000\t05/10/2026\tTransfer\tInfaq\n2\tCak War\t50000\t08/10/2026\tQRIS\t\n\n(Tinggal blok di Excel, Ctrl+C lalu Ctrl+V di sini. Tgl bisa diisi misal 05/10/2026 atau angka tanggalnya saja 5)"}
                     className="w-full font-mono text-xs rounded-xl border border-outline-variant bg-surface-container-low p-3 text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:ring-2 focus:ring-primary transition-all resize-y"
                   />
                 </div>
@@ -1003,6 +1022,7 @@ export default function AdminPembayaranClient({
                         "ID",
                         "Nama Donatur",
                         "Nilai Donasi (Rp)",
+                        "Tgl Bayar",
                         "Metode Pembayaran",
                         "Keterangan",
                       ])
@@ -1034,6 +1054,7 @@ export default function AdminPembayaranClient({
                               const idVal = getExcelValue(r, "ID", "ID Donatur", "id_donatur", "No ID", "Kode Donatur");
                               const namaVal = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur");
                               const nomVal = getExcelValue(r, "Nilai Donasi (Rp)", "Nilai Donasi", "Nominal", "Jumlah", "Donasi");
+                              const rawTglVal = getExcelValue(r, "Tgl Bayar", "Tanggal Bayar", "Tgl", "Tanggal", "Tgl Transfer", "tgl_bayar");
                               const metVal = getExcelValue(r, "Metode Pembayaran", "Metode", "Cara Bayar") || "Default";
                               const numClean = nomVal.replace(/[^0-9]/g, "");
 
@@ -1043,7 +1064,9 @@ export default function AdminPembayaranClient({
                                   <span className="font-semibold text-on-surface">
                                     {numClean ? formatRupiah(parseInt(numClean)) : "Rp 0 (Abaikan)"}
                                   </span>{" "}
-                                  <span className="text-[10px] opacity-75">({metVal})</span>
+                                  <span className="text-[10px] opacity-75">
+                                    ({metVal}{rawTglVal ? ` • Tgl ${rawTglVal}` : ""})
+                                  </span>
                                 </div>
                               );
                             })}
