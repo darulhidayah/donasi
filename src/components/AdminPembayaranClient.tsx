@@ -81,6 +81,14 @@ export default function AdminPembayaranClient({
     return sortOrder === "asc" ? res : -res;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
+
+  const totalPages = Math.max(1, Math.ceil(sortedPembayaran.length / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, sortedPembayaran.length);
+  const paginatedPembayaran = sortedPembayaran.slice(startIndex, endIndex);
 
   const [form, setForm] = useState({
     donatur_id: "" as string,
@@ -92,6 +100,7 @@ export default function AdminPembayaranClient({
 
   const loadBulan = async (tahun: number, bulan: number) => {
     setLoadingBulan(true);
+    setCurrentPage(1);
     const { data } = await supabase
       .from("pembayaran")
       .select("*")
@@ -105,6 +114,7 @@ export default function AdminPembayaranClient({
     const d = new Date(bulanTahun.tahun, bulanTahun.bulan - 1 + delta);
     const newVal = { tahun: d.getFullYear(), bulan: d.getMonth() + 1 };
     setBulanTahun(newVal);
+    setCurrentPage(1);
     loadBulan(newVal.tahun, newVal.bulan);
   };
 
@@ -427,7 +437,8 @@ export default function AdminPembayaranClient({
         {loadingBulan ? (
           <div className="py-16 text-center text-on-surface-variant">Memuat data bulan...</div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-surface-container-low border-b border-outline-variant">
                 <tr>
@@ -510,9 +521,9 @@ export default function AdminPembayaranClient({
                     </td>
                   </tr>
                 ) : (
-                  sortedPembayaran.map((p, i) => (
+                  paginatedPembayaran.map((p, i) => (
                     <tr key={p.id} className="hover:bg-surface-container-low transition-colors">
-                      <td className="px-4 py-3 text-on-surface-variant">{i + 1}</td>
+                      <td className="px-4 py-3 text-on-surface-variant">{startIndex + i + 1}</td>
                       <td className="px-4 py-3 font-mono text-xs font-semibold text-primary tabular-nums" title={`ID Donatur: #${p.donatur_id} | ID Setoran: #${p.id}`}>
                         #{p.donatur_id}
                       </td>
@@ -602,6 +613,60 @@ export default function AdminPembayaranClient({
               )}
             </table>
           </div>
+
+          {/* Pagination Bar (100 baris per halaman) */}
+          {sortedPembayaran.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-outline-variant bg-surface-container-low text-xs text-on-surface-variant">
+              <div>
+                Menampilkan <span className="font-semibold text-on-surface">{startIndex + 1}</span> -{" "}
+                <span className="font-semibold text-on-surface">{endIndex}</span> dari{" "}
+                <span className="font-semibold text-on-surface">{sortedPembayaran.length}</span> pembayaran
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safeCurrentPage === 1}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium text-on-surface"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                    <span>Sebelumnya</span>
+                  </button>
+
+                  <div className="flex items-center gap-1 px-1">
+                    {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={cn(
+                          "h-7 min-w-7 px-2 rounded-lg text-xs font-semibold transition-colors",
+                          safeCurrentPage === pageNum
+                            ? "bg-primary text-on-primary shadow-2xs"
+                            : "hover:bg-surface-container text-on-surface-variant hover:text-on-surface"
+                        )}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safeCurrentPage === totalPages}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium text-on-surface"
+                  >
+                    <span>Berikutnya</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
         )}
       </div>
 

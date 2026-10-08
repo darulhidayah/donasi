@@ -7,8 +7,8 @@ type Pembayaran = Database["public"]["Tables"]["pembayaran"]["Row"];
 
 /** Ekspor Daftar Donatur ke File Excel */
 export function exportDonaturToExcel(donatur: Donatur[], filename = "Data_Donatur_MDH.xlsx") {
-  const data = donatur.map((d, index) => ({
-    No: index + 1,
+  const data = donatur.map((d) => ({
+    No: d.id,
     "Nama Donatur": d.nama,
     "Nomor HP / WA": d.no_hp ?? "",
     "Minimal Donasi (Rp)": d.minimal_bulanan,
@@ -88,6 +88,7 @@ export function exportRekapToExcel(
 export function downloadTemplateDonaturExcel() {
   const contoh = [
     {
+      No: 1,
       "Nama Donatur": "H. Ahmad Fauzi (Contoh)",
       "Nomor HP / WA": "081234567890",
       "Minimal Donasi (Rp)": 100000,
@@ -95,11 +96,20 @@ export function downloadTemplateDonaturExcel() {
       Catatan: "Donatur tetap sejak awal",
     },
     {
+      No: 2,
       "Nama Donatur": "Ibu Siti Rahmah (Contoh)",
       "Nomor HP / WA": "082198765432",
       "Minimal Donasi (Rp)": 50000,
       "Metode Pembayaran": "QRIS",
       Catatan: "",
+    },
+    {
+      No: "",
+      "Nama Donatur": "Bapak Abdullah (Donatur Baru)",
+      "Nomor HP / WA": "081311223344",
+      "Minimal Donasi (Rp)": 150000,
+      "Metode Pembayaran": "Tunai",
+      Catatan: "Kosongkan No atau beri nomor baru untuk donatur baru",
     },
   ];
 
@@ -108,6 +118,7 @@ export function downloadTemplateDonaturExcel() {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Template Donatur");
   XLSX.writeFile(workbook, "Template_Import_Donatur_MDH.xlsx");
 }
+
 
 /** Download Template Excel Kosong untuk Import Pembayaran */
 export function downloadTemplatePembayaranExcel() {

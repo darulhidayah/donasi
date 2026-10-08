@@ -16,7 +16,7 @@ import {
   Upload, Download, AlertCircle, CheckCircle2, User, CreditCard,
   QrCode, Banknote, ShieldAlert, Eye, Calendar, ExternalLink,
   History, Clock, Check, MoreVertical, Trash2,
-  ArrowUpDown, ArrowUp, ArrowDown
+  ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 
@@ -162,6 +162,18 @@ export default function AdminDonaturClient({
     return sortOrder === "asc" ? res : -res;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, sorted.length);
+  const paginatedList = sorted.slice(startIndex, endIndex);
 
   const openAdd = () => {
     setEditing(null);
@@ -300,7 +312,7 @@ export default function AdminDonaturClient({
     });
   };
 
-  // Handler Import Excel
+  // Handler Import Excel Donatur (Smart Sync: Update jika data berubah, abaikan jika sama, tambah jika ID baru)
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -314,98 +326,180 @@ export default function AdminDonaturClient({
         return;
       }
 
-      setImportStatus(`Memproses ${rows.length} data donatur...`);
+      setImportStatus(`Memeriksa ${rows.length} baris data donatur...`);
 
-      const payload = rows
-        .map((r) => {
-          const nama = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur", "Nama Lengkap");
-          if (!nama) return null;
+      const { data: user } = await supabase.auth.getUser();
 
-          const rawNoHp = getExcelValue(
-            r,
-            "Nomor HP / WA",
-            "Nomor HP/WA",
-            "No. HP / WA",
-            "No HP / WA",
-            "Nomor HP",
-            "No. HP",
-            "No HP",
-            "HP",
-            "WA",
-            "WhatsApp",
-            "No WA",
-            "No. WA",
-            "Telepon",
-            "No Telp",
-            "Kontak",
-            "no_hp",
-            "nohp"
-          );
-          const noHp = cleanPhoneNumber(rawNoHp);
+      const toInsert: any[] = [];
+      const toUpdate: Array<{ id: number; data: any }> = [];
+      let skippedCount = 0;
 
-          const rawNominal = getExcelValue(
-            r,
-            "Minimal Donasi (Rp)",
-            "Minimal Donasi",
-            "Nilai Donasi",
-            "Nominal",
-            "Donasi",
-            "minimal_bulanan"
-          );
-          const minNominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || minimalDonasi;
+      for (const r of rows) {
+        const rawNo = getExcelValue(r, "No", "NO", "No.", "ID", "id", "No ID", "Nomor");
+        const nama = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur", "Nama Lengkap");
+        if (!nama) continue;
 
-          let rawMetode = getExcelValue(r, "Metode Pembayaran", "Metode", "Cara Bayar", "metode_default");
-          let metode: Donatur["metode_default"] = "Transfer";
-          if (rawMetode.toLowerCase().includes("qris")) metode = "QRIS";
-          else if (rawMetode.toLowerCase().includes("tunai") || rawMetode.toLowerCase().includes("cash")) metode = "Tunai";
-          else if (rawMetode.toLowerCase().includes("transfer") || rawMetode.toLowerCase().includes("bank")) metode = "Transfer";
-          else if (rawMetode) metode = "Lainnya";
+        const rawNoHp = getExcelValue(
+          r,
+          "Nomor HP / WA",
+          "Nomor HP/WA",
+          "No. HP / WA",
+          "No HP / WA",
+          "Nomor HP",
+          "No. HP",
+          "No HP",
+          "HP",
+          "WA",
+          "WhatsApp",
+          "No WA",
+          "No. WA",
+          "Telepon",
+          "No Telp",
+          "Kontak",
+          "no_hp",
+          "nohp"
+        );
+        const noHp = cleanPhoneNumber(rawNoHp);
 
-          const catatan = getExcelValue(r, "Catatan", "Keterangan", "Ket", "Note");
+        const rawNominal = getExcelValue(
+          r,
+          "Minimal Donasi (Rp)",
+          "Minimal Donasi",
+          "Nilai Donasi",
+          "Nominal",
+          "Donasi",
+          "minimal_bulanan"
+        );
+        const minNominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || minimalDonasi;
 
-          const rawStatus = getExcelValue(r, "Status", "Status Donatur");
-          const status = rawStatus.toLowerCase().includes("nonaktif") ? "nonaktif" : "aktif";
+        let rawMetode = getExcelValue(r, "Metode Pembayaran", "Metode", "Cara Bayar", "metode_default");
+        let metode: Donatur["metode_default"] = "Transfer";
+        if (rawMetode.toLowerCase().includes("qris")) metode = "QRIS";
+        else if (rawMetode.toLowerCase().includes("tunai") || rawMetode.toLowerCase().includes("cash")) metode = "Tunai";
+        else if (rawMetode.toLowerCase().includes("transfer") || rawMetode.toLowerCase().includes("bank")) metode = "Transfer";
+        else if (rawMetode) metode = "Lainnya";
 
-          return {
-            nama: nama.trim(),
-            no_hp: noHp,
-            minimal_bulanan: Math.max(minimalDonasi, minNominal),
-            metode_default: metode,
-            catatan: catatan ? catatan.trim() : null,
-            status: status as Donatur["status"],
+        const catatan = getExcelValue(r, "Catatan", "Keterangan", "Ket", "Note");
+
+        const rawStatus = getExcelValue(r, "Status", "Status Donatur");
+        const status: Donatur["status"] = rawStatus.toLowerCase().includes("nonaktif") ? "nonaktif" : "aktif";
+
+        // Cek ID dari kolom No
+        const cleanNo = rawNo ? parseInt(rawNo.replace(/[^0-9]/g, "")) : NaN;
+        let existing: Donatur | undefined = undefined;
+
+        if (!isNaN(cleanNo) && cleanNo > 0) {
+          existing = list.find((d) => d.id === cleanNo);
+        }
+
+        const incomingData = {
+          nama: nama.trim(),
+          no_hp: noHp || null,
+          minimal_bulanan: Math.max(minimalDonasi, minNominal),
+          metode_default: metode,
+          catatan: catatan ? catatan.trim() : null,
+          status,
+        };
+
+        if (existing) {
+          // Cek apakah ada perubahan data pada ID yang sudah ada
+          const normStr = (s: string | null | undefined) => (s ?? "").trim();
+          const isChanged =
+            normStr(existing.nama).toLowerCase() !== normStr(incomingData.nama).toLowerCase() ||
+            normStr(existing.no_hp) !== normStr(incomingData.no_hp) ||
+            Number(existing.minimal_bulanan) !== Number(incomingData.minimal_bulanan) ||
+            existing.metode_default !== incomingData.metode_default ||
+            existing.status !== incomingData.status ||
+            normStr(existing.catatan) !== normStr(incomingData.catatan);
+
+          if (isChanged) {
+            toUpdate.push({
+              id: existing.id,
+              data: {
+                ...incomingData,
+                updated_by_name: `${adminNama} (Import Excel)`,
+              },
+            });
+          } else {
+            // Data tidak berubah, abaikan
+            skippedCount++;
+          }
+        } else {
+          // ID baru atau belum ada di database -> Tambahkan sebagai donatur baru
+          toInsert.push({
+            ...incomingData,
+            tgl_daftar: new Date().toISOString().split("T")[0],
+            created_by: user.user?.id,
             created_by_name: `${adminNama} (Import Excel)`,
-          };
-        })
-        .filter(Boolean);
+          });
+        }
+      }
 
-      if (payload.length === 0) {
-        setError("Tidak ada baris donatur yang valid dengan kolom 'Nama Donatur'.");
+      if (toInsert.length === 0 && toUpdate.length === 0) {
+        setError(
+          `Tidak ada data yang perlu disimpan (${skippedCount} data donatur diabaikan karena tidak ada perubahan).`
+        );
         setImportStatus(null);
         return;
       }
 
-      const { data, error: insertErr } = await supabase
-        .from("donatur")
-        .insert(payload as any)
-        .select();
+      setImportStatus(
+        `Menyimpan: ${toInsert.length} donatur baru, memperbarui ${toUpdate.length} data donatur...`
+      );
 
-      if (insertErr) {
-        setError("Gagal import: " + insertErr.message);
-        setImportStatus(null);
-        return;
+      let updatedList = [...list];
+
+      // 1. Eksekusi Update untuk donatur yang datanya berubah
+      for (const item of toUpdate) {
+        const { data: updatedDonatur, error: updateErr } = await supabase
+          .from("donatur")
+          .update(item.data)
+          .eq("id", item.id)
+          .select()
+          .single();
+
+        if (updateErr) {
+          console.error("Gagal update donatur id " + item.id, updateErr);
+        } else if (updatedDonatur) {
+          updatedList = updatedList.map((d) => (d.id === item.id ? (updatedDonatur as Donatur) : d));
+        }
       }
 
-      setList((prev) => [...(data as Donatur[]), ...prev]);
-      setImportStatus(`Berhasil mengimpor ${data.length} data donatur!`);
+      // 2. Eksekusi Insert untuk donatur baru
+      if (toInsert.length > 0) {
+        const { data: insertedData, error: insertErr } = await supabase
+          .from("donatur")
+          .insert(toInsert)
+          .select();
+
+        if (insertErr) {
+          setError("Gagal menambahkan donatur baru: " + insertErr.message);
+          setImportStatus(null);
+          return;
+        }
+
+        if (insertedData) {
+          updatedList = [...(insertedData as Donatur[]), ...updatedList];
+        }
+      }
+
+      // 3. Update state list donatur
+      setList(updatedList);
+
+      setImportStatus(
+        `Selesai: ${toInsert.length} donatur baru ditambahkan, ${toUpdate.length} diperbarui, ${skippedCount} diabaikan (tidak berubah).`
+      );
+
       setTimeout(() => {
         setImportModalOpen(false);
         setImportStatus(null);
-      }, 1500);
+      }, 2500);
     } catch (err: any) {
       setError("Format file tidak didukung: " + err.message);
       setImportStatus(null);
     }
   };
+
 
   const aktifCount = list.filter((d) => d.status === "aktif").length;
 
@@ -592,9 +686,9 @@ export default function AdminDonaturClient({
                   </td>
                 </tr>
               ) : (
-                sorted.map((d, i) => (
+                paginatedList.map((d, i) => (
                   <tr key={d.id} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-4 py-3 text-on-surface-variant">{i + 1}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{startIndex + i + 1}</td>
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-primary tabular-nums" title={`ID Donatur: #${d.id}`}>
                       #{d.id}
                     </td>
@@ -773,6 +867,59 @@ export default function AdminDonaturClient({
 
           </table>
         </div>
+
+        {/* Pagination Bar (100 baris per halaman) */}
+        {sorted.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-outline-variant bg-surface-container-low text-xs text-on-surface-variant">
+            <div>
+              Menampilkan <span className="font-semibold text-on-surface">{startIndex + 1}</span> -{" "}
+              <span className="font-semibold text-on-surface">{endIndex}</span> dari{" "}
+              <span className="font-semibold text-on-surface">{sorted.length}</span> donatur
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage === 1}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium text-on-surface"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>Sebelumnya</span>
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={cn(
+                        "h-7 min-w-7 px-2 rounded-lg text-xs font-semibold transition-colors",
+                        safeCurrentPage === pageNum
+                          ? "bg-primary text-on-primary shadow-2xs"
+                          : "hover:bg-surface-container text-on-surface-variant hover:text-on-surface"
+                      )}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium text-on-surface"
+                >
+                  <span>Berikutnya</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* MODAL INPUT / EDIT DONATUR: SOLID 100%, ANTI GELAP & ANTI BURAM */}
@@ -948,7 +1095,15 @@ export default function AdminDonaturClient({
             </div>
 
             <p className="text-xs text-on-surface-variant mb-4">
-              Unggah file Excel (<strong>.xlsx</strong> / <strong>.xls</strong>) daftar donatur yang sudah dibuat oleh koordinator. Kolom utama: <strong>Nama Donatur</strong>, <strong>Nomor HP</strong>, <strong>Minimal Donasi</strong>, <strong>Metode</strong>.
+              Unggah file Excel (<strong>.xlsx</strong> / <strong>.xls</strong>) daftar donatur.
+              <br />
+              Kolom template: <strong>No</strong> (ID Donatur), <strong>Nama Donatur</strong>, <strong>Nomor HP / WA</strong>, <strong>Minimal Donasi (Rp)</strong>, <strong>Metode Pembayaran</strong>, dan <strong>Catatan</strong>.
+              <br />
+              <span className="text-[11px] opacity-80">
+                • <strong>ID yang sudah ada:</strong> jika ada perubahan data otomatis di-<strong>update</strong>, jika sama otomatis di-<strong>abaikan</strong>.
+                <br />
+                • <strong>ID baru / baris tambahan:</strong> otomatis di-<strong>tambahkan</strong> sebagai donatur baru.
+              </span>
             </p>
 
             {error && (
