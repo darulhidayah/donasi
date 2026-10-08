@@ -234,6 +234,50 @@ body {
   background-image: linear-gradient(180deg, #131210 0%, #0f0e0c 100%);
 }
 
+/* ============ FORM CONTROLS & DROPDOWN (NATIVE SELECT & OPTION) ============ */
+select,
+input,
+textarea {
+  color-scheme: light;
+}
+
+.dark select,
+.dark input,
+.dark textarea {
+  color-scheme: dark !important;
+}
+
+select {
+  background-color: rgb(var(--c-surface));
+  color: rgb(var(--c-on-surface));
+}
+
+.dark select {
+  background-color: rgb(var(--c-surface-container)) !important;
+  color: rgb(var(--c-on-surface)) !important;
+  border-color: rgb(var(--c-outline-variant) / 0.6);
+}
+
+select option,
+select optgroup {
+  background-color: #ffffff;
+  color: #1f1d1a;
+}
+
+.dark select option,
+.dark select optgroup {
+  background-color: #24221e !important;
+  color: #f3f1eb !important;
+}
+
+.dark select option:hover,
+.dark select option:focus,
+.dark select option:checked {
+  background-color: #3b3527 !important;
+  color: #fcd34d !important;
+}
+
+
 /* ============ UNIFIED CARD STYLE (KONSISTEN DI SEMUA PAGE) ============ */
 .bento-card,
 .app-card {

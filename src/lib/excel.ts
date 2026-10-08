@@ -109,6 +109,40 @@ export function downloadTemplateDonaturExcel() {
   XLSX.writeFile(workbook, "Template_Import_Donatur_MDH.xlsx");
 }
 
+/** Download Template Excel Kosong untuk Import Pembayaran */
+export function downloadTemplatePembayaranExcel() {
+  const contoh = [
+    {
+      ID: 1,
+      "Nama Donatur": "H. Ahmad Fauzi (Contoh)",
+      "Nilai Donasi (Rp)": 100000,
+      "Metode Pembayaran": "Transfer",
+      Keterangan: "Infaq pembangunan",
+    },
+    {
+      ID: 2,
+      "Nama Donatur": "Ibu Siti Rahmah (Contoh)",
+      "Nilai Donasi (Rp)": 50000,
+      "Metode Pembayaran": "QRIS",
+      Keterangan: "",
+    },
+    {
+      ID: 3,
+      "Nama Donatur": "Bapak Abdullah (Contoh)",
+      "Nilai Donasi (Rp)": "",
+      "Metode Pembayaran": "Tunai",
+      Keterangan: "Kosongkan nominal jika belum bayar (akan otomatis diabaikan)",
+    },
+  ];
+
+  const worksheet = XLSX.utils.json_to_sheet(contoh);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Template Pembayaran");
+  XLSX.writeFile(workbook, "Template_Import_Pembayaran_MDH.xlsx");
+}
+
+
+
 /**
  * Membaca file Excel (Array of Objects) secara aman & presisi
  * Menggunakan type array dan raw: false agar angka nol di awal nomor telepon tidak hilang

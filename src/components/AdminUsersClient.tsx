@@ -225,10 +225,10 @@ export default function AdminUsersClient({
                   onChange={(e) =>
                     setForm((f) => ({ ...f, role: e.target.value as "superadmin" | "admin" }))
                   }
-                  className="w-full rounded-xl border border-outline-variant bg-surface px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full rounded-xl border border-outline-variant bg-surface dark:bg-surface-container px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
                 >
-                  <option value="admin">Admin (Input & Update Data)</option>
-                  <option value="superadmin">Superadmin (Kelola Admin & Konfigurasi)</option>
+                  <option value="admin" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Admin (Input & Update Data)</option>
+                  <option value="superadmin" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Superadmin (Kelola Admin & Konfigurasi)</option>
                 </select>
               </div>
             </div>

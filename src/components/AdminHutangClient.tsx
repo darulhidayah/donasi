@@ -850,7 +850,11 @@ export default function AdminHutangClient({
                   {list.map((h) => {
                     const sisa = Math.max(0, h.nominal - h.terbayar);
                     return (
-                      <option key={h.id} value={h.id}>
+                      <option
+                        key={h.id}
+                        value={h.id}
+                        className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]"
+                      >
                         {h.nama_kreditor} (Sisa Hutang: {formatRupiah(sisa)})
                       </option>
                     );
@@ -893,10 +897,10 @@ export default function AdminHutangClient({
                     }
                     className={inputCls}
                   >
-                    <option value="Transfer">Transfer Bank Kas</option>
-                    <option value="Tunai">Tunai / Kas Langsung</option>
-                    <option value="Cek">Cek / Giro Bank</option>
-                    <option value="Lainnya">Lainnya</option>
+                    <option value="Transfer" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Transfer Bank Kas</option>
+                    <option value="Tunai" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Tunai / Kas Langsung</option>
+                    <option value="Cek" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Cek / Giro Bank</option>
+                    <option value="Lainnya" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Lainnya</option>
                   </select>
                 </div>
               </div>
@@ -1459,9 +1463,9 @@ export default function AdminHutangClient({
                   }
                   className={inputCls}
                 >
-                  <option value="belum_lunas">Belum Lunas</option>
-                  <option value="sebagian">Sebagian Terbayar</option>
-                  <option value="lunas">Lunas Sepenuhnya</option>
+                  <option value="belum_lunas" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Belum Lunas</option>
+                  <option value="sebagian" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Sebagian Terbayar</option>
+                  <option value="lunas" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">Lunas Sepenuhnya</option>
                 </select>
               </div>
 
@@ -1583,7 +1587,8 @@ export default function AdminHutangClient({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-outline-variant bg-surface px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-all";
+  "w-full rounded-xl border border-outline-variant bg-surface dark:bg-surface-container px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-all";
+
 
 function StatCard({
   icon,

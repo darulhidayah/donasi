@@ -3,12 +3,18 @@
 import { useState, useTransition, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah, formatTanggal, NAMA_BULAN, toBulanDB } from "@/lib/utils";
-import { exportPembayaranToExcel, readExcelFile, getExcelValue, cleanPhoneNumber } from "@/lib/excel";
+import {
+  exportPembayaranToExcel,
+  downloadTemplatePembayaranExcel,
+  readExcelFile,
+  getExcelValue,
+  cleanPhoneNumber,
+} from "@/lib/excel";
 import { cn } from "@/lib/utils";
 import {
   Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight,
   Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle2,
-  CreditCard, QrCode, Banknote, User,
+  CreditCard, QrCode, Banknote, User, ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 
@@ -16,6 +22,8 @@ type Donatur = Database["public"]["Tables"]["donatur"]["Row"];
 type Pembayaran = Database["public"]["Tables"]["pembayaran"]["Row"];
 
 const METODE_OPTIONS = ["Transfer", "QRIS", "Tunai", "Lainnya"] as const;
+
+type PembayaranSortField = "donatur_id" | "nama_donatur" | "nominal" | "metode" | "tgl_bayar";
 
 export default function AdminPembayaranClient({
   donaturList,
@@ -33,6 +41,8 @@ export default function AdminPembayaranClient({
   const now = new Date();
   const [bulanTahun, setBulanTahun] = useState({ tahun: now.getFullYear(), bulan: now.getMonth() + 1 });
   const [pembayaran, setPembayaran] = useState<Pembayaran[]>(initialPembayaran);
+  const [sortField, setSortField] = useState<PembayaranSortField>("tgl_bayar");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [loadingBulan, setLoadingBulan] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -45,6 +55,32 @@ export default function AdminPembayaranClient({
 
   const bulanDB = toBulanDB(bulanTahun.tahun, bulanTahun.bulan);
   const labelBulan = `${NAMA_BULAN[bulanTahun.bulan - 1]} ${bulanTahun.tahun}`;
+
+  const handleSort = (field: PembayaranSortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const sortedPembayaran = [...pembayaran].sort((a, b) => {
+    let res = 0;
+    if (sortField === "donatur_id") {
+      res = a.donatur_id - b.donatur_id;
+    } else if (sortField === "nama_donatur") {
+      res = a.nama_donatur.localeCompare(b.nama_donatur, "id", { sensitivity: "base" });
+    } else if (sortField === "nominal") {
+      res = a.nominal - b.nominal;
+    } else if (sortField === "metode") {
+      res = (a.metode || "").localeCompare(b.metode || "");
+    } else if (sortField === "tgl_bayar") {
+      res = new Date(a.tgl_bayar).getTime() - new Date(b.tgl_bayar).getTime();
+    }
+    return sortOrder === "asc" ? res : -res;
+  });
+
 
   const [form, setForm] = useState({
     donatur_id: "" as string,
@@ -191,79 +227,49 @@ export default function AdminPembayaranClient({
         return;
       }
 
-      setImportStatus(`Mencocokkan ${rows.length} baris donatur...`);
+      setImportStatus(`Memvalidasi ${rows.length} baris data...`);
 
       const payload = [];
       const { data: userData } = await supabase.auth.getUser();
 
-      for (const r of rows) {
-        const nama = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur", "Nama Lengkap");
-        if (!nama) continue;
+      const invalidIds: string[] = [];
+      let skippedCount = 0;
 
-        let donatur = donaturList.find(
-          (d) => d.nama.toLowerCase().trim() === nama.toLowerCase().trim()
-        );
+      for (const [index, r] of rows.entries()) {
+        const rawId = getExcelValue(r, "ID", "ID Donatur", "id_donatur", "No ID", "Kode Donatur");
+        const rawNama = getExcelValue(r, "Nama Donatur", "Nama", "Donatur", "NAMA", "nama_donatur", "Nama Lengkap");
+        const rawNominal = getExcelValue(r, "Nilai Donasi (Rp)", "Nilai Donasi", "Nominal", "Jumlah", "Donasi");
 
-        let donaturId = donatur?.id;
-        const rawNoHp = getExcelValue(
-          r,
-          "Nomor HP / WA",
-          "Nomor HP/WA",
-          "No. HP / WA",
-          "No HP / WA",
-          "No. HP",
-          "Nomor HP",
-          "No HP",
-          "HP",
-          "WA",
-          "WhatsApp",
-          "No WA",
-          "No. WA",
-          "Telepon",
-          "No Telp",
-          "Kontak",
-          "no_hp",
-          "nohp"
-        );
-        const noHp = cleanPhoneNumber(rawNoHp) || donatur?.no_hp;
-
-        if (!donaturId) {
-          const { data: newD } = await supabase
-            .from("donatur")
-            .insert({
-              nama: nama.trim(),
-              no_hp: noHp || null,
-              minimal_bulanan: minimalDonasi,
-              metode_default: "Transfer",
-              status: "aktif",
-              created_by_name: `${adminNama} (Auto Import)`,
-            })
-            .select()
-            .single();
-          if (newD) donaturId = newD.id;
+        // Jika baris benar-benar kosong (tidak ada ID, Nama, maupun Nominal), skip
+        if (!rawId && !rawNama && !rawNominal) {
+          continue;
         }
 
-        if (!donaturId) continue;
+        // Cek ID: Harus ada dan valid angka
+        const parsedId = rawId ? parseInt(rawId.replace(/[^0-9]/g, "")) : NaN;
+        if (!rawId || isNaN(parsedId)) {
+          invalidIds.push(`Baris ${index + 2}: ID tidak valid (${rawId ? `"${rawId}"` : "kosong"}) - ${rawNama || "Tanpa Nama"}`);
+          continue;
+        }
 
-        const rawNominal = getExcelValue(
-          r,
-          "Nilai Donasi (Rp)",
-          "Nilai Donasi",
-          "Nominal",
-          "Minimal Donasi",
-          "Jumlah",
-          "Donasi"
-        );
-        const nominal = parseInt(rawNominal.replace(/[^0-9]/g, "")) || minimalDonasi;
+        // Cek apakah ID sudah terdaftar sebagai donatur di database
+        const donatur = donaturList.find((d) => d.id === parsedId);
+        if (!donatur) {
+          invalidIds.push(`ID #${parsedId} (${rawNama || "Nama tidak ditemukan"})`);
+          continue;
+        }
 
-        let rawMetode = getExcelValue(
-          r,
-          "Metode Pembayaran",
-          "Keterangan Donasi",
-          "Metode",
-          "Cara Bayar"
-        );
-        let metode: Pembayaran["metode"] = "Transfer";
+        // Cek Nilai Donasi: jika tidak ada nominal / 0 / strip, ABAIKAN (skip)
+        const cleanNominalStr = rawNominal.replace(/[^0-9]/g, "");
+        const nominal = parseInt(cleanNominalStr) || 0;
+        if (!cleanNominalStr || nominal <= 0) {
+          skippedCount++;
+          continue;
+        }
+
+        // Parsing metode pembayaran
+        let rawMetode = getExcelValue(r, "Metode Pembayaran", "Metode", "Cara Bayar", "Keterangan Donasi");
+        let metode: Pembayaran["metode"] = donatur.metode_default || "Transfer";
         let ket = "";
 
         if (rawMetode.includes("-")) {
@@ -281,21 +287,36 @@ export default function AdminPembayaranClient({
         if (directKet) ket = directKet;
 
         payload.push({
-          donatur_id: donaturId,
-          nama_donatur: nama.trim(),
-          no_hp_donatur: noHp || null,
+          donatur_id: donatur.id,
+          nama_donatur: donatur.nama,
+          no_hp_donatur: donatur.no_hp,
           bulan: bulanDB,
-          nominal: Math.max(minimalDonasi, nominal),
+          nominal,
           metode,
           keterangan: ket || null,
           tgl_bayar: new Date().toISOString().split("T")[0],
           dicatat_oleh: userData.user?.id,
           nama_pencatat: `${adminNama} (Import Excel)`,
+          updated_by_name: `${adminNama} (Import Excel)`,
         });
       }
 
+      // Jika ditemukan ID yang belum terdaftar, TOLAK SELURUH IMPORT
+      if (invalidIds.length > 0) {
+        setError(
+          `Import Ditolak! Ditemukan ${invalidIds.length} ID Donatur yang belum terdaftar di database:\n• ` +
+          invalidIds.slice(0, 5).join("\n• ") +
+          (invalidIds.length > 5 ? `\n• ...dan ${invalidIds.length - 5} lainnya` : "") +
+          "\n\nSilakan daftarkan terlebih dahulu di menu Donatur agar ID tidak bentrok."
+        );
+        setImportStatus(null);
+        return;
+      }
+
       if (payload.length === 0) {
-        setError("Tidak ada data donasi yang cocok dalam file Excel.");
+        setError(
+          `Tidak ada data setoran yang dapat dicatat (${skippedCount} baris diabaikan karena kolom Nilai Donasi kosong / 0).`
+        );
         setImportStatus(null);
         return;
       }
@@ -312,11 +333,13 @@ export default function AdminPembayaranClient({
       }
 
       await loadBulan(bulanTahun.tahun, bulanTahun.bulan);
-      setImportStatus(`Berhasil mencatat ${payload.length} setoran pembayaran!`);
+      setImportStatus(
+        `Berhasil memproses ${payload.length} data setoran (${skippedCount} baris tanpa nominal diabaikan).`
+      );
       setTimeout(() => {
         setImportModalOpen(false);
         setImportStatus(null);
-      }, 1500);
+      }, 2000);
     } catch (err: any) {
       setError("Format file tidak didukung: " + err.message);
       setImportStatus(null);
@@ -408,27 +431,91 @@ export default function AdminPembayaranClient({
             <table className="w-full text-sm">
               <thead className="bg-surface-container-low border-b border-outline-variant">
                 <tr>
-                  <th className="text-left px-4 py-3 font-bold text-on-surface-variant">No</th>
-                  <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Nama Donatur</th>
+                  <th className="text-left px-4 py-3 font-bold text-on-surface-variant w-12">No</th>
+                  <th
+                    onClick={() => handleSort("donatur_id")}
+                    className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>ID</span>
+                      {sortField === "donatur_id" ? (
+                        sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort("nama_donatur")}
+                    className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Nama Donatur</span>
+                      {sortField === "nama_donatur" ? (
+                        sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
                   <th className="text-left px-4 py-3 font-bold text-on-surface-variant">No. HP</th>
-                  <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Nilai Donasi</th>
-                  <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Metode</th>
-                  <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Tgl Bayar</th>
+                  <th
+                    onClick={() => handleSort("nominal")}
+                    className="text-right px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      <span>Nilai Donasi</span>
+                      {sortField === "nominal" ? (
+                        sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort("metode")}
+                    className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Metode</span>
+                      {sortField === "metode" ? (
+                        sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort("tgl_bayar")}
+                    className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>Tgl Bayar</span>
+                      {sortField === "tgl_bayar" ? (
+                        sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
                   <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Penanggung Jawab</th>
                   <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {pembayaran.length === 0 ? (
+                {sortedPembayaran.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-on-surface-variant">
+                    <td colSpan={9} className="py-12 text-center text-on-surface-variant">
                       Belum ada catatan pembayaran di bulan {labelBulan}
                     </td>
                   </tr>
                 ) : (
-                  pembayaran.map((p, i) => (
+                  sortedPembayaran.map((p, i) => (
                     <tr key={p.id} className="hover:bg-surface-container-low transition-colors">
                       <td className="px-4 py-3 text-on-surface-variant">{i + 1}</td>
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-primary tabular-nums" title={`ID Donatur: #${p.donatur_id} | ID Setoran: #${p.id}`}>
+                        #{p.donatur_id}
+                      </td>
                       <td className="px-4 py-3 font-semibold text-on-surface">
                         <div>{p.nama_donatur}</div>
                         {p.keterangan && (
@@ -503,7 +590,7 @@ export default function AdminPembayaranClient({
               {pembayaran.length > 0 && (
                 <tfoot className="bg-surface-container-low border-t-2 border-outline-variant">
                   <tr>
-                    <td colSpan={3} className="px-4 py-3.5 font-bold text-on-surface">
+                    <td colSpan={4} className="px-4 py-3.5 font-bold text-on-surface">
                       TOTAL PENERIMAAN {labelBulan.toUpperCase()} ({pembayaran.length} Setoran)
                     </td>
                     <td className="px-4 py-3.5 text-right font-mono font-black text-primary tabular-nums">
@@ -570,9 +657,15 @@ export default function AdminPembayaranClient({
                   disabled={!!editing}
                   className={cn(inputCls, editing && "opacity-60")}
                 >
-                  <option value="">-- Pilih Donatur --</option>
+                  <option value="" className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]">
+                    -- Pilih Donatur --
+                  </option>
                   {donaturList.map((d) => (
-                    <option key={d.id} value={d.id}>
+                    <option
+                      key={d.id}
+                      value={d.id}
+                      className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]"
+                    >
                       {d.nama} {d.no_hp ? `(${d.no_hp})` : ""}
                     </option>
                   ))}
@@ -607,7 +700,12 @@ export default function AdminPembayaranClient({
                     className={inputCls}
                   >
                     {METODE_OPTIONS.map((m) => (
-                      <option key={m}>{m}</option>
+                      <option
+                        key={m}
+                        className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]"
+                      >
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -685,7 +783,14 @@ export default function AdminPembayaranClient({
 
             <p className="text-xs text-on-surface-variant mb-4">
               Upload file Excel rincian pembayaran untuk periode <strong>{labelBulan}</strong>.
-              Kolom: <strong>Nama Donatur</strong>, <strong>Nilai Donasi</strong>, dan <strong>Keterangan Donasi</strong> (QRIS / Rek. Masjid / Tunai).
+              <br />
+              Kolom template: <strong>ID</strong> (key utama), <strong>Nama Donatur</strong>, <strong>Nilai Donasi (Rp)</strong>, <strong>Metode Pembayaran</strong>, dan <strong>Keterangan</strong>.
+              <br />
+              <span className="text-[11px] opacity-80">
+                • Baris tanpa nominal donasi akan <strong>diabaikan</strong>.
+                <br />
+                • ID donatur baru yang belum terdaftar akan <strong>ditolak</strong> (harus didaftarkan terlebih dahulu).
+              </span>
             </p>
 
             {error && (
@@ -702,20 +807,39 @@ export default function AdminPembayaranClient({
               </div>
             )}
 
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-2xl p-6 text-center cursor-pointer hover:border-primary transition-colors bg-surface-container-low"
-            >
-              <Upload className="h-8 w-8 text-primary mb-2" />
-              <p className="text-sm font-semibold text-on-surface">Pilih File Excel Rincian</p>
-              <p className="text-[11px] text-on-surface-variant mt-1">Format .xlsx atau .xls</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx, .xls"
-                onChange={handleImportExcel}
-                className="hidden"
-              />
+            <div className="space-y-4">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="flex flex-col items-center justify-center border-2 border-dashed border-outline-variant rounded-2xl p-6 text-center cursor-pointer hover:border-primary transition-colors bg-surface-container-low"
+              >
+                <Upload className="h-8 w-8 text-primary mb-2" />
+                <p className="text-sm font-semibold text-on-surface">Pilih File Excel Rincian</p>
+                <p className="text-[11px] text-on-surface-variant mt-1">Format .xlsx atau .xls</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleImportExcel}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Download Template Format Excel */}
+              <div className="flex items-center justify-between rounded-xl bg-surface-container p-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-on-surface">Belum punya formatnya?</p>
+                  <p className="text-[11px] text-on-surface-variant">
+                    Unduh file template Excel resmi
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadTemplatePembayaranExcel}
+                  className="flex items-center gap-1 rounded-lg border border-outline-variant bg-surface px-2.5 py-1 text-xs font-semibold text-primary hover:bg-surface-container-high transition-colors cursor-pointer"
+                >
+                  <Download className="h-3 w-3" /> Unduh
+                </button>
+              </div>
             </div>
 
             <div className="mt-6 pt-3 border-t border-outline-variant">
@@ -770,4 +894,5 @@ export default function AdminPembayaranClient({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-outline-variant bg-surface px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-all";
+  "w-full rounded-xl border border-outline-variant bg-surface dark:bg-surface-container px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-all";
+

@@ -15,7 +15,8 @@ import {
   Plus, Pencil, UserX, UserCheck, Search, X, FileSpreadsheet,
   Upload, Download, AlertCircle, CheckCircle2, User, CreditCard,
   QrCode, Banknote, ShieldAlert, Eye, Calendar, ExternalLink,
-  History, Clock, Check, MoreVertical, Trash2
+  History, Clock, Check, MoreVertical, Trash2,
+  ArrowUpDown, ArrowUp, ArrowDown
 } from "lucide-react";
 import type { Database } from "@/lib/database.types";
 
@@ -48,6 +49,8 @@ function generateBulanList(tglDaftarStr: string) {
 
 const METODE_OPTIONS = ["Transfer", "QRIS", "Tunai", "Lainnya"] as const;
 
+type DonaturSortField = "id" | "nama" | "no_hp" | "minimal_bulanan" | "metode_default" | "status";
+
 export default function AdminDonaturClient({
   initialList,
   paidDonaturIds = [],
@@ -62,11 +65,14 @@ export default function AdminDonaturClient({
   const [list, setList] = useState<Donatur[]>(initialList);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<"semua" | "aktif" | "nonaktif">("semua");
+  const [sortField, setSortField] = useState<DonaturSortField>("id");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [modalOpen, setModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [editing, setEditing] = useState<Donatur | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Donatur | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+
   
   // State Modal Detail Riwayat Pelunasan Donatur
   const [detailDonatur, setDetailDonatur] = useState<Donatur | null>(null);
@@ -128,6 +134,34 @@ export default function AdminDonaturClient({
     const matchStatus = filterStatus === "semua" || d.status === filterStatus;
     return matchSearch && matchStatus;
   });
+
+  const handleSort = (field: DonaturSortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const sorted = [...filtered].sort((a, b) => {
+    let res = 0;
+    if (sortField === "id") {
+      res = a.id - b.id;
+    } else if (sortField === "nama") {
+      res = a.nama.localeCompare(b.nama, "id", { sensitivity: "base" });
+    } else if (sortField === "no_hp") {
+      res = (a.no_hp || "").localeCompare(b.no_hp || "");
+    } else if (sortField === "minimal_bulanan") {
+      res = a.minimal_bulanan - b.minimal_bulanan;
+    } else if (sortField === "metode_default") {
+      res = (a.metode_default || "").localeCompare(b.metode_default || "");
+    } else if (sortField === "status") {
+      res = a.status.localeCompare(b.status);
+    }
+    return sortOrder === "asc" ? res : -res;
+  });
+
 
   const openAdd = () => {
     setEditing(null);
@@ -467,27 +501,103 @@ export default function AdminDonaturClient({
           <table className="w-full text-sm">
             <thead className="bg-surface-container-low border-b border-outline-variant">
               <tr>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">No</th>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Nama Donatur</th>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">No. HP / WA</th>
-                <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Min. Donasi</th>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Metode</th>
-                <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Status</th>
+                <th className="text-left px-4 py-3 font-bold text-on-surface-variant w-12">No</th>
+                <th
+                  onClick={() => handleSort("id")}
+                  className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>ID</span>
+                    {sortField === "id" ? (
+                      sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("nama")}
+                  className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Nama Donatur</span>
+                    {sortField === "nama" ? (
+                      sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("no_hp")}
+                  className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>No. HP / WA</span>
+                    {sortField === "no_hp" ? (
+                      sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("minimal_bulanan")}
+                  className="text-right px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    <span>Min. Donasi</span>
+                    {sortField === "minimal_bulanan" ? (
+                      sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("metode_default")}
+                  className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Metode</span>
+                    {sortField === "metode_default" ? (
+                      sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                    )}
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort("status")}
+                  className="text-left px-4 py-3 font-bold text-on-surface-variant cursor-pointer hover:text-on-surface select-none transition-colors"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Status</span>
+                    {sortField === "status" ? (
+                      sortOrder === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100" />
+                    )}
+                  </div>
+                </th>
                 <th className="text-left px-4 py-3 font-bold text-on-surface-variant">Penanggung Jawab</th>
                 <th className="text-right px-4 py-3 font-bold text-on-surface-variant">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant">
-              {filtered.length === 0 ? (
+              {sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-on-surface-variant">
+                  <td colSpan={9} className="py-12 text-center text-on-surface-variant">
                     Tidak ada data donatur yang cocok dengan filter ({filterStatus})
                   </td>
                 </tr>
               ) : (
-                filtered.map((d, i) => (
+                sorted.map((d, i) => (
                   <tr key={d.id} className="hover:bg-surface-container-low transition-colors">
                     <td className="px-4 py-3 text-on-surface-variant">{i + 1}</td>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-primary tabular-nums" title={`ID Donatur: #${d.id}`}>
+                      #{d.id}
+                    </td>
                     <td className="px-4 py-3 font-semibold text-on-surface">
                       <div>{d.nama}</div>
                       {d.catatan && (
@@ -609,8 +719,8 @@ export default function AdminDonaturClient({
                           {activeMenuId === d.id && (
                             <div
                               className={cn(
-                                "absolute right-0 w-44 rounded-xl border border-outline-variant bg-surface p-1 shadow-xl z-30 text-left animate-in fade-in zoom-in-95 duration-100",
-                                i >= filtered.length - 2 && filtered.length > 2
+                                "absolute right-0 w-44 rounded-xl border border-outline-variant bg-surface dark:bg-surface-container p-1 shadow-xl dark:shadow-2xl z-30 text-left animate-in fade-in zoom-in-95 duration-100",
+                                i >= sorted.length - 2 && sorted.length > 2
                                   ? "bottom-full mb-1"
                                   : "top-full mt-1"
                               )}
@@ -623,7 +733,7 @@ export default function AdminDonaturClient({
                                   setActiveMenuId(null);
                                   openEdit(d);
                                 }}
-                                className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container transition-colors text-left cursor-pointer"
+                                className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors text-left cursor-pointer"
                               >
                                 <Pencil className="h-3.5 w-3.5 text-on-surface-variant" />
                                 <span>Edit Data</span>
@@ -660,6 +770,7 @@ export default function AdminDonaturClient({
                 ))
               )}
             </tbody>
+
           </table>
         </div>
       </div>
@@ -754,7 +865,12 @@ export default function AdminDonaturClient({
                     className={inputCls}
                   >
                     {METODE_OPTIONS.map((m) => (
-                      <option key={m}>{m}</option>
+                      <option
+                        key={m}
+                        className="bg-surface text-on-surface dark:bg-[#24221e] dark:text-[#f3f1eb]"
+                      >
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1242,4 +1358,5 @@ export default function AdminDonaturClient({
 }
 
 const inputCls =
-  "w-full rounded-xl border border-outline-variant bg-surface px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-all";
+  "w-full rounded-xl border border-outline-variant bg-surface dark:bg-surface-container px-3.5 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-all";
+
